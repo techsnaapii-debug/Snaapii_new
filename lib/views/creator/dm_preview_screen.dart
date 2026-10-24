@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'automation_dashboard_screen.dart';
+import 'package:snaapii/widgets/creator_widget/automation_live_dialog.dart';
 
 class DmPreviewScreen extends StatefulWidget {
   final File? selectedImage;
@@ -547,11 +548,17 @@ class _DmPreviewScreenState extends State<DmPreviewScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: GestureDetector(
                       onTap: () {
-                        Get.to(
-                          () => const AutomationDashboardScreen(
-                            automationType: 'dm',
-                            isDm: true,
-                          ),
+                        AutomationLiveDialog.show(
+                          context,
+                          onOkay: () {
+                            Navigator.of(context).pop();
+                            Get.to(
+                              () => const AutomationDashboardScreen(
+                                automationType: 'dm',
+                                isDm: true,
+                              ),
+                            );
+                          },
                         );
                       },
                       behavior: HitTestBehavior.opaque,

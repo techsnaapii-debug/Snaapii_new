@@ -180,7 +180,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         gradient: LinearGradient(
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.6),
+                            Colors.black.withValues(alpha: 0.6),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -237,37 +237,39 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        Column(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black.withOpacity(0.4),
-                              ),
-                              child: Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..scale(-1.0, 1.0, 1.0),
-                                child: const Icon(
-                                  Icons.reply,
-                                  color: Colors.white,
-                                  size: 26,
+                        GestureDetector(
+                          onTap: () => _showShareBottomSheet(context),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                ),
+                                child: Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.diagonal3Values(-1.0, 1.0, 1.0),
+                                  child: const Icon(
+                                    Icons.reply,
+                                    color: Colors.white,
+                                    size: 26,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '500',
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                              const SizedBox(height: 4),
+                              Text(
+                                '500',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -367,7 +369,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
           ),
           child: Icon(icon, color: Colors.white, size: 22),
         ),

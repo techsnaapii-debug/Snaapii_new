@@ -84,7 +84,7 @@ class _AiScreenState extends State<AiScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.white,
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         drawer: _buildDrawer(),
         body: Center(
           child: ConstrainedBox(
@@ -260,7 +260,11 @@ class _AiScreenState extends State<AiScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 100),
+                        SizedBox(
+                          height: MediaQuery.of(context).viewInsets.bottom > 0
+                              ? MediaQuery.of(context).viewInsets.bottom + 12
+                              : 100,
+                        ),
                       ],
                     ),
 
@@ -585,7 +589,7 @@ class _AiScreenState extends State<AiScreen> {
             border: Border.all(color: const Color(0xFFEBE8FC), width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -626,7 +630,7 @@ class _AiScreenState extends State<AiScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9E8EFE).withOpacity(0.4),
+              color: const Color(0xFF9E8EFE).withValues(alpha: 0.4),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -1016,7 +1020,11 @@ class _AiScreenState extends State<AiScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 100),
+        SizedBox(
+          height: MediaQuery.of(context).viewInsets.bottom > 0
+              ? MediaQuery.of(context).viewInsets.bottom + 12
+              : 100,
+        ),
       ],
     );
   }

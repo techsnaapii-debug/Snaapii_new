@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'go_live_screen.dart';
+import 'package:snaapii/widgets/dashed_border_painter.dart';
 
 class CreateAutomationScreen extends StatefulWidget {
   const CreateAutomationScreen({super.key});
@@ -20,9 +20,31 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   bool _anyComment = false;
-  bool _replyPublicly = true;
+  bool _replyPublicly = false;
   final TextEditingController _keywordsController = TextEditingController();
   final FocusNode _keywordsFocusNode = FocusNode();
+  final List<String> _specificKeywords = [];
+
+  void _addKeyword() {
+    final text = _keywordsController.text.trim();
+    if (text.isNotEmpty) {
+      if (!_specificKeywords.contains(text)) {
+        setState(() {
+          _specificKeywords.add(text);
+          _anyComment = false;
+          _keywordsController.clear();
+        });
+      } else {
+        _keywordsController.clear();
+      }
+    }
+  }
+
+  void _removeKeyword(int index) {
+    setState(() {
+      _specificKeywords.removeAt(index);
+    });
+  }
   final List<String> _autoReplies = [
     'Thanks! Just sent it to your DM 🚀',
     'Check your inbox ✨',
@@ -326,6 +348,7 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
         systemNavigationBarColor: Colors.transparent,
       ),
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: Colors.white,
         body: SafeArea(
           child: Center(
@@ -340,47 +363,81 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_currentStep == 2) ...[
-                          const Text(
-                            'Reply to',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_currentStep == 2) ...[
+                                    const Text(
+                                      'Reply to',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'choose which comments should get an automatic reply',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                  ],
+                                  if (_currentStep == 3) ...[
+                                    const Text(
+                                      'Send a DM',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                  ],
+                                  Text(
+                                    'Step $_currentStep Of 3',
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF9D6BFF),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'choose which comments should get an automatic reply',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 10,
-                              color: Colors.grey,
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 2),
+                                  child: Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 16,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
-                        if (_currentStep == 3) ...[
-                          const Text(
-                            'Send a DM',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
-                        Text(
-                          'Step $_currentStep Of 3',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF9D6BFF),
-                          ),
+                          ],
                         ),
                         const SizedBox(height: 8),
 
@@ -400,9 +457,13 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 12.0,
+                      padding: EdgeInsets.only(
+                        left: 20.0,
+                        right: 20.0,
+                        top: 12.0,
+                        bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                            ? MediaQuery.of(context).viewInsets.bottom + 120
+                            : 12.0,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,10 +476,11 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                     ),
                   ),
 
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: _buildBottomButtons(),
-                  ),
+                  if (MediaQuery.of(context).viewInsets.bottom == 0)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: _buildBottomButtons(),
+                    ),
                 ],
               ),
             ),
@@ -690,6 +752,9 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                   onChanged: (value) {
                     setState(() {
                       _allPostReel = value;
+                      if (value) {
+                        _selectedPostIndex = -1;
+                      }
                     });
                   },
                 ),
@@ -703,7 +768,10 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _selectedPostIndex = 0),
+                onTap: () => setState(() {
+                  _selectedPostIndex = 0;
+                  _allPostReel = false;
+                }),
                 child: _buildPostCard(
                   index: 0,
                   child: Container(
@@ -728,7 +796,9 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                         Positioned(
                           top: 6,
                           right: 6,
-                          child: _buildRadioIcon(_selectedPostIndex == 0),
+                          child: _buildRadioIcon(
+                            !_allPostReel && _selectedPostIndex == 0,
+                          ),
                         ),
                       ],
                     ),
@@ -740,7 +810,10 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
 
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _selectedPostIndex = 1),
+                onTap: () => setState(() {
+                  _selectedPostIndex = 1;
+                  _allPostReel = false;
+                }),
                 child: _buildPostCard(
                   index: 1,
                   child: Stack(
@@ -757,7 +830,9 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                       Positioned(
                         top: 6,
                         right: 6,
-                        child: _buildRadioIcon(_selectedPostIndex == 1),
+                        child: _buildRadioIcon(
+                          !_allPostReel && _selectedPostIndex == 1,
+                        ),
                       ),
                     ],
                   ),
@@ -768,7 +843,10 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
 
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _selectedPostIndex = 2),
+                onTap: () => setState(() {
+                  _selectedPostIndex = 2;
+                  _allPostReel = false;
+                }),
                 child: _buildPostCard(
                   index: 2,
                   child: Stack(
@@ -785,17 +863,8 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                       Positioned(
                         top: 6,
                         right: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.black45,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Icon(
-                            Icons.slideshow,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                        child: _buildRadioIcon(
+                          !_allPostReel && _selectedPostIndex == 2,
                         ),
                       ),
                     ],
@@ -892,70 +961,62 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
-                child: Column(
+                child: Stack(
                   children: [
-                    Expanded(
-                      flex: 9,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Image.asset(
-                              'assets/images/girl_image.png',
-                              fit: BoxFit.cover,
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/girl_image.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      left: 10,
+                      right: 10,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            '10:20',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
-                          Positioned(
-                            top: 6,
-                            left: 10,
-                            right: 10,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: const [
-                                Text(
-                                  '10:20',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.signal_cellular_4_bar,
-                                      size: 8,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(width: 2),
-                                    Icon(
-                                      Icons.wifi,
-                                      size: 8,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(width: 2),
-                                    Icon(
-                                      Icons.battery_full,
-                                      size: 8,
-                                      color: Colors.white,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.signal_cellular_4_bar,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                              SizedBox(width: 2),
+                              Icon(Icons.wifi, size: 8, color: Colors.white),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.battery_full,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-
-                    Expanded(
-                      flex: 11,
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 145,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
                         decoration: const BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
                           ),
                         ),
                         child: Column(
@@ -1142,6 +1203,10 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                   onChanged: (value) {
                     setState(() {
                       _anyComment = value;
+                      if (value) {
+                        _keywordsController.clear();
+                        _keywordsFocusNode.unfocus();
+                      }
                     });
                   },
                 ),
@@ -1151,22 +1216,33 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
         ),
         const SizedBox(height: 16),
 
-        const Text(
-          'Specific Keywords',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
+        Row(
+          children: [
+            const Text(
+              'Specific Keywords',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.info_outline,
+              size: 16,
+              color: Color(0xFF9E9E9E),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
 
         Container(
+          height: 52,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2D9FF), width: 1.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFBA8FFF), width: 1.5),
           ),
           child: Row(
             children: [
@@ -1174,9 +1250,25 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                 child: TextField(
                   controller: _keywordsController,
                   focusNode: _keywordsFocusNode,
+                  onSubmitted: (_) => _addKeyword(),
+                  onTap: () {
+                    if (_anyComment) {
+                      setState(() {
+                        _anyComment = false;
+                      });
+                    }
+                  },
+                  onChanged: (text) {
+                    setState(() {});
+                    if (text.isNotEmpty && _anyComment) {
+                      setState(() {
+                        _anyComment = false;
+                      });
+                    }
+                  },
                   style: const TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 13,
+                    fontSize: 13.5,
                     color: Colors.black87,
                   ),
                   decoration: const InputDecoration(
@@ -1189,22 +1281,82 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 14,
                     ),
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(right: 14.0),
-                child: Icon(
-                  Icons.add_circle_outline,
-                  color: Color(0xFFBA8FFF),
-                  size: 27,
+              GestureDetector(
+                onTap: _addKeyword,
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14.0),
+                  child: Icon(
+                    Icons.add_circle_outline,
+                    color: Color(0xFF6B4EFF),
+                    size: 28,
+                  ),
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 6),
+
+        Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: Text(
+            '${_keywordsController.text.length}/60',
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 11,
+              color: Color(0xFF9E9E9E),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        if (_specificKeywords.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(_specificKeywords.length, (index) {
+              final keyword = _specificKeywords[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      keyword,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => _removeKeyword(index),
+                      behavior: HitTestBehavior.opaque,
+                      child: const Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
         const SizedBox(height: 16),
 
         GestureDetector(
@@ -2175,7 +2327,7 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
   }
 
   Widget _buildPostCard({required int index, required Widget child}) {
-    final isSelected = _selectedPostIndex == index;
+    final isSelected = !_allPostReel && _selectedPostIndex == index;
     return Container(
       height: 140,
       decoration: BoxDecoration(
@@ -3663,55 +3815,4 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
       },
     );
   }
-}
-
-class DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashWidth;
-  final double dashGap;
-  final double radius;
-
-  DashedBorderPainter({
-    this.color = const Color(0xFFD1D5DB),
-    this.strokeWidth = 1.2,
-    this.dashWidth = 5.0,
-    this.dashGap = 4.0,
-    this.radius = 12.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final Path path = Path();
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(radius),
-      ),
-    );
-
-    final Path dashedPath = Path();
-    for (final ui.PathMetric metric in path.computeMetrics()) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final double len = (distance + dashWidth < metric.length)
-            ? dashWidth
-            : metric.length - distance;
-        dashedPath.addPath(
-          metric.extractPath(distance, distance + len),
-          Offset.zero,
-        );
-        distance += dashWidth + dashGap;
-      }
-    }
-    canvas.drawPath(dashedPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

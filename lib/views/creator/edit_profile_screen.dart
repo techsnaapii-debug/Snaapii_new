@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_button.dart';
+import 'package:snaapii/widgets/creator_widget/creator_input_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -144,45 +145,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                           const SizedBox(height: 24),
 
-                          _buildInputField('Name', controller: _nameController),
-                          _buildInputField('Bio', controller: _bioController),
-                          _buildInputField(
-                            'Category',
+                          CreatorInputField(
+                            label: 'Name',
+                            controller: _nameController,
+                          ),
+                          CreatorInputField(
+                            label: 'Bio',
+                            controller: _bioController,
+                          ),
+                          CreatorInputField(
+                            label: 'Category',
                             controller: _categoryController,
                           ),
-                          _buildInputField(
-                            'Gender',
+                          CreatorInputField(
+                            label: 'Gender',
                             controller: _genderController,
                           ),
 
                           Row(
                             children: [
                               Expanded(
-                                child: _buildInputField(
-                                  'State',
+                                child: CreatorInputField(
+                                  label: 'State',
                                   controller: _stateController,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: _buildInputField(
-                                  'City',
+                                child: CreatorInputField(
+                                  label: 'City',
                                   controller: _cityController,
                                 ),
                               ),
                             ],
                           ),
 
-                          _buildInputField(
-                            'Date of Birth',
+                          CreatorInputField(
+                            label: 'Date of Birth',
                             controller: _dobController,
                           ),
-                          _buildInputField(
-                            'Phone Number',
+                          CreatorInputField(
+                            label: 'Phone Number',
                             controller: _phoneController,
                           ),
-                          _buildInputField(
-                            'Address Details',
+                          CreatorInputField(
+                            label: 'Address Details',
                             controller: _addressController,
                           ),
 
@@ -218,60 +225,5 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildInputField(
-    String label, {
-    TextEditingController? controller,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (label.isNotEmpty) ...[
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: Color(0xFF4A4A4A),
-          ),
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFE5E5E5),
-                width: 1.2,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF9E8EFE),
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
+
 }

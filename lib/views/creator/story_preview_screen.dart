@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'story_preview2_screen.dart';
+import 'automation_dashboard_screen.dart';
+import 'package:snaapii/widgets/creator_widget/live_automation_preview_slides.dart';
+import 'package:snaapii/widgets/creator_widget/automation_live_dialog.dart';
 
 class StoryPreviewScreen extends StatefulWidget {
   final String? storyImage;
@@ -16,6 +18,7 @@ class StoryPreviewScreen extends StatefulWidget {
   final String? followingText;
   final String? linkTitle;
   final String? linkUrl;
+  final int initialPageIndex;
 
   const StoryPreviewScreen({
     super.key,
@@ -30,6 +33,7 @@ class StoryPreviewScreen extends StatefulWidget {
     this.followingText,
     this.linkTitle,
     this.linkUrl,
+    this.initialPageIndex = 0,
   });
 
   @override
@@ -37,6 +41,37 @@ class StoryPreviewScreen extends StatefulWidget {
 }
 
 class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
+  late final PageController _pageController;
+  late int _currentPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPage = widget.initialPageIndex;
+    _pageController = PageController(initialPage: _currentPage);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onGoLiveTap() {
+    AutomationLiveDialog.show(
+      context,
+      onOkay: () {
+        Navigator.of(context).pop();
+        Get.to(
+          () => const AutomationDashboardScreen(
+            automationType: 'story',
+            isDm: false,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String displayImage =
@@ -45,6 +80,31 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         : 'assets/images/girl_image.png';
 
     final String displayName = widget.username ?? 'Richa';
+
+    final String displayKeyword =
+        (widget.keyword != null && widget.keyword!.trim().isNotEmpty)
+        ? widget.keyword!.trim().split(',').first.trim()
+        : 'Link';
+
+    final String displayOpeningText =
+        (widget.openingMessageText != null &&
+            widget.openingMessageText!.trim().isNotEmpty)
+        ? widget.openingMessageText!
+        : "Thanks a lot for reaching out — really excited to see your interest 🙃You're just one step away from getting everything you need.Tap below and I'll send the details right over 🚀";
+
+    final String displayVisitText = widget.visitProfileText ?? 'Visit Profile';
+    final String displayFollowingText =
+        widget.followingText ?? 'I’m Following ✅';
+
+    final String displayMessage =
+        (widget.message != null && widget.message!.trim().isNotEmpty)
+        ? widget.message!
+        : 'Hey\nThanks for texting, Here\nis the link';
+
+    final String displayLinkTitle =
+        (widget.linkTitle != null && widget.linkTitle!.trim().isNotEmpty)
+        ? widget.linkTitle!
+        : 'Click Here';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -90,170 +150,54 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   Expanded(
-                    child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 36.0),
                       child: Container(
-                        width: 275,
-                        height: 490,
                         decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(32),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(36),
+                          border: Border.all(
+                            color: const Color(0xFFC4B5FD),
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
+                              color: const Color(
+                                0xFF6B4EFF,
+                              ).withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(32),
-                          child: Stack(
+                          borderRadius: BorderRadius.circular(34),
+                          child: PageView(
+                            controller: _pageController,
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentPage = index;
+                              });
+                            },
+                            physics: const BouncingScrollPhysics(),
                             children: [
-                              Positioned(
-                                top: 90,
-                                left: 0,
-                                right: 0,
-                                bottom: 24,
-                                child: widget.selectedFile != null
-                                    ? Image.file(
-                                        widget.selectedFile!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.asset(
-                                        displayImage,
-                                        fit: BoxFit.cover,
-                                      ),
+                              StoryAutomationSlide1(
+                                storyImage: displayImage,
+                                username: displayName,
                               ),
-
-                              Positioned(
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: 95,
-                                child: Container(
-                                  color: Colors.black,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(height: 10),
-
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text(
-                                            '10:20',
-                                            style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.signal_cellular_alt,
-                                                color: Colors.white,
-                                                size: 13,
-                                              ),
-                                              const SizedBox(width: 4),
-
-                                              Icon(
-                                                Icons.wifi,
-                                                color: Colors.white,
-                                                size: 13,
-                                              ),
-                                              const SizedBox(width: 4),
-
-                                              Icon(
-                                                Icons.battery_full,
-                                                color: Colors.white,
-                                                size: 14,
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(2),
-                                        child: Container(
-                                          height: 2.5,
-                                          color: Colors.white,
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: FractionallySizedBox(
-                                              widthFactor: 0.45,
-                                              child: Container(
-                                                color: const Color(0xFFE11D48),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 1.0,
-                                              ),
-                                              image: const DecorationImage(
-                                                image: AssetImage(
-                                                  'assets/images/girl_image.png',
-                                                ),
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            displayName,
-                                            style: const TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              Positioned(
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                height: 24,
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    borderRadius: BorderRadius.vertical(
-                                      bottom: Radius.circular(32),
-                                    ),
-                                  ),
-                                ),
+                              StoryAutomationSlide2(
+                                username: displayName,
+                                storyImage: displayImage,
+                                keyword: displayKeyword,
+                                openingMessageText: displayOpeningText,
+                                visitProfileText: displayVisitText,
+                                followingText: displayFollowingText,
+                                message: displayMessage,
+                                linkTitle: displayLinkTitle,
                               ),
                             ],
                           ),
@@ -261,28 +205,32 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(2, (index) {
+                      final isActive = _currentPage == index;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        height: 7,
+                        width: isActive ? 12 : 7,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFF6B4EFF)
+                              : const Color(0xFFE9D5FF),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
 
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+                    padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
                     child: GestureDetector(
-                      onTap: () {
-                        Get.to(
-                          () => StoryPreview2Screen(
-                            storyImage: widget.storyImage,
-                            selectedFile: widget.selectedFile,
-                            username: widget.username,
-                            automationName: widget.automationName,
-                            keyword: widget.keyword,
-                            message: widget.message,
-                            openingMessageText: widget.openingMessageText,
-                            visitProfileText: widget.visitProfileText,
-                            followingText: widget.followingText,
-                            linkTitle: widget.linkTitle,
-                            linkUrl: widget.linkUrl,
-                          ),
-                        );
-                      },
+                      onTap: _onGoLiveTap,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: double.infinity,

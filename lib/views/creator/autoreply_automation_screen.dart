@@ -224,6 +224,7 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
         systemNavigationBarColor: Colors.transparent,
       ),
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: Colors.white,
         body: SafeArea(
           child: Center(
@@ -236,25 +237,51 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () => Get.back(),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Color(0xFF6B4EFF),
-                            size: 20,
-                          ),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Get.back(),
+                              behavior: HitTestBehavior.opaque,
+                              child: const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Color(0xFF6B4EFF),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Auto reply',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B4EFF),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Auto reply',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B4EFF),
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.black,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 2),
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 16,
+                                color: Colors.black,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -996,24 +1023,24 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
                     child: GestureDetector(
-                      onTap: () {
-                        final selectedPost = _posts.length > _selectedPostIndex
-                            ? _posts[_selectedPostIndex]['image']
-                            : null;
-                        Get.to(
-                          () => AutoreplyPreviewScreen(
-                            postImage: selectedPost,
-                            automationName: _nameController.text.trim(),
-                            delay: _selectedDelay,
-                            repliesCount: _repliesPerReel
-                                ? _repliesCount.toInt()
-                                : null,
-                            autoLikeCount: _autoLikeComments
-                                ? _autoLikeCount.toInt()
-                                : null,
-                          ),
-                        );
-                      },
+                        onTap: () {
+                          final selectedPost = _posts.length > _selectedPostIndex
+                              ? _posts[_selectedPostIndex]['image']
+                              : null;
+                          Get.to(
+                            () => AutoreplyPreviewScreen(
+                              postImage: selectedPost,
+                              automationName: _nameController.text.trim(),
+                              delay: _selectedDelay,
+                              repliesCount: _repliesPerReel
+                                  ? _repliesCount.toInt()
+                                  : null,
+                              autoLikeCount: _autoLikeComments
+                                  ? _autoLikeCount.toInt()
+                                  : null,
+                            ),
+                          );
+                        },
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: double.infinity,

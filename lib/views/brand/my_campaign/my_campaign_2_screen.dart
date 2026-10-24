@@ -11,6 +11,8 @@ import 'campaign_details_screen.dart';
 
 class MyCampaign2Screen extends StatefulWidget {
   final String initialTab;
+  static bool isDraftSaved = false;
+
   const MyCampaign2Screen({super.key, this.initialTab = 'Active'});
 
   @override
@@ -109,7 +111,9 @@ class _MyCampaign2ScreenState extends State<MyCampaign2Screen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              if (_activeCampaignTab == 'Pending')
+                              if (_activeCampaignTab == 'Pending' ||
+                                  (_activeCampaignTab == 'Draft' &&
+                                      MyCampaign2Screen.isDraftSaved))
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16.0,
@@ -202,7 +206,7 @@ class _MyCampaign2ScreenState extends State<MyCampaign2Screen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9E8EFE).withOpacity(0.4),
+              color: const Color(0xFF9E8EFE).withValues(alpha: 0.4),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),

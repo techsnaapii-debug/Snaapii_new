@@ -10,6 +10,7 @@ import 'edit_profile_screen.dart';
 import 'explore_screen.dart';
 import 'refer_earn_screen.dart';
 import 'wallet_screen.dart';
+import 'package:snaapii/widgets/creator_widget/logout_confirmation_dialog.dart';
 
 class CreatorSettingScreen extends StatefulWidget {
   const CreatorSettingScreen({super.key});
@@ -261,96 +262,10 @@ class _CreatorSettingScreenState extends State<CreatorSettingScreen> {
   }
 
   void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 24.0,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Are you sure you want to\nLogout?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => Navigator.of(dialogContext).pop(),
-                        borderRadius: BorderRadius.circular(30),
-                        child: Container(
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFBA8FFF),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.of(dialogContext).pop();
-                        },
-                        borderRadius: BorderRadius.circular(30),
-                        child: Container(
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: const Color(0xFFBA8FFF),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Text(
-                            'Yes',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    LogoutConfirmationDialog.show(
+      context,
+      onCancel: () {},
+      onConfirm: () {},
     );
   }
 }

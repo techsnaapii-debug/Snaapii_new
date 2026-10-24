@@ -901,10 +901,10 @@ class _BrandOtpBottomSheetContent extends StatefulWidget {
 class _BrandOtpBottomSheetContentState
     extends State<_BrandOtpBottomSheetContent> {
   final List<TextEditingController> _controllers = List.generate(
-    4,
+    6,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   int _resendCountdown = 30;
   Timer? _timer;
@@ -914,6 +914,19 @@ class _BrandOtpBottomSheetContentState
   void initState() {
     super.initState();
     _startCountdown();
+    for (int i = 0; i < 6; i++) {
+      final index = i;
+      _focusNodes[index].onKeyEvent = (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.backspace &&
+            _controllers[index].text.isEmpty &&
+            index > 0) {
+          _focusNodes[index - 1].requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      };
+    }
   }
 
   void _startCountdown() {
@@ -950,7 +963,7 @@ class _BrandOtpBottomSheetContentState
 
   void _onDigitChanged(int index, String value) {
     if (value.isNotEmpty) {
-      if (index < 3) {
+      if (index < 5) {
         _focusNodes[index + 1].requestFocus();
       } else {
         _focusNodes[index].unfocus();
@@ -1001,7 +1014,7 @@ class _BrandOtpBottomSheetContentState
           ),
           const SizedBox(height: 8),
           const Text(
-            'Please enter the 4-digit code sent to your registered phone / email to sign the agreement.',
+            'Please enter the 6-digit code sent to your registered phone / email to sign the agreement.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Poppins',
@@ -1013,50 +1026,39 @@ class _BrandOtpBottomSheetContentState
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(4, (index) {
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(6, (index) {
               return Container(
-                width: 54,
-                height: 54,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
+                width: 44,
+                height: 48,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: const Color(0xFFC4B5FD),
                     width: 1.5,
                   ),
                 ),
-                child: KeyboardListener(
-                  focusNode: FocusNode(),
-                  onKeyEvent: (event) {
-                    if (event is KeyDownEvent &&
-                        event.logicalKey == LogicalKeyboardKey.backspace &&
-                        _controllers[index].text.isEmpty &&
-                        index > 0) {
-                      _focusNodes[index - 1].requestFocus();
-                    }
-                  },
-                  child: TextField(
-                    controller: _controllers[index],
-                    focusNode: _focusNodes[index],
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 1,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E1A34),
-                    ),
-                    decoration: const InputDecoration(
-                      counterText: '',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (val) => _onDigitChanged(index, val),
+                alignment: Alignment.center,
+                child: TextField(
+                  controller: _controllers[index],
+                  focusNode: _focusNodes[index],
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  maxLength: 1,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E1A34),
                   ),
+                  decoration: const InputDecoration(
+                    counterText: '',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (val) => _onDigitChanged(index, val),
                 ),
               );
             }),

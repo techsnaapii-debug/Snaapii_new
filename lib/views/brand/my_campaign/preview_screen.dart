@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_button.dart';
+import 'basic_details_screen.dart';
+import 'my_campaign_2_screen.dart';
 import 'publish_campaign_screen.dart';
 
 class PreviewScreen extends StatelessWidget {
@@ -321,7 +323,7 @@ class PreviewScreen extends StatelessWidget {
                                 backgroundColor: const Color(0xFFF9F8FF),
                                 textColor: const Color(0xFF000000),
                                 onTap: () {
-                                  Get.back();
+                                  Get.offAll(() => const BasicDetailsScreen());
                                 },
                               ),
                             ),
@@ -332,7 +334,14 @@ class PreviewScreen extends StatelessWidget {
                                 imagePath: 'assets/images/draft_icon.png',
                                 backgroundColor: const Color(0xFFF9F8FF),
                                 textColor: const Color(0xFF000000),
-                                onTap: () {},
+                                onTap: () {
+                                  MyCampaign2Screen.isDraftSaved = true;
+                                  Get.to(
+                                    () => const MyCampaign2Screen(
+                                      initialTab: 'Draft',
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:snaapii/widgets/creator_widget/automation_action_button.dart';
+import 'package:snaapii/widgets/creator_widget/automation_active_card.dart';
+import 'package:snaapii/widgets/creator_widget/automation_stat_card.dart';
+import 'package:snaapii/widgets/creator_widget/shoe_collection_card.dart';
 import 'comment_automation_screen.dart';
 
 class CommentShoeCollectionScreen extends StatelessWidget {
@@ -64,10 +68,10 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildAutomationActiveCard(),
+                          const AutomationActiveCard(),
                           const SizedBox(height: 14),
 
-                          _buildShoeCollectionCard(),
+                          const ShoeCollectionCard(),
                           const SizedBox(height: 18),
 
                           Row(
@@ -97,22 +101,22 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                           const SizedBox(height: 10),
 
                           Row(
-                            children: [
+                            children: const [
                               Expanded(
-                                child: _buildStatCard(
+                                child: AutomationStatCard(
                                   icon: Icons.chat_bubble_rounded,
-                                  iconColor: const Color(0xFF6366F1),
-                                  iconBgColor: const Color(0xFFEEF2FF),
+                                  iconColor: Color(0xFF6366F1),
+                                  iconBgColor: Color(0xFFEEF2FF),
                                   title: 'Comments Triggered',
                                   value: '1200',
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
-                                child: _buildStatCard(
+                                child: AutomationStatCard(
                                   icon: Icons.send_rounded,
-                                  iconColor: const Color(0xFF8B5CF6),
-                                  iconBgColor: const Color(0xFFF3E8FF),
+                                  iconColor: Color(0xFF8B5CF6),
+                                  iconBgColor: Color(0xFFF3E8FF),
                                   title: 'DMs Sent',
                                   value: '1200',
                                 ),
@@ -121,22 +125,22 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Row(
-                            children: [
+                            children: const [
                               Expanded(
-                                child: _buildStatCard(
+                                child: AutomationStatCard(
                                   icon: Icons.remove_red_eye_rounded,
-                                  iconColor: const Color(0xFFF97316),
-                                  iconBgColor: const Color(0xFFFFEDD5),
+                                  iconColor: Color(0xFFF97316),
+                                  iconBgColor: Color(0xFFFFEDD5),
                                   title: 'Profile Visits',
                                   value: '120',
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
-                                child: _buildStatCard(
+                                child: AutomationStatCard(
                                   icon: Icons.people_alt_rounded,
-                                  iconColor: const Color(0xFF059669),
-                                  iconBgColor: const Color(0xFFD1FAE5),
+                                  iconColor: Color(0xFF059669),
+                                  iconBgColor: Color(0xFFD1FAE5),
                                   title: 'Followers Gained',
                                   value: '120',
                                 ),
@@ -145,10 +149,10 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          _buildFullWidthStatCard(
+                          const FullWidthStatCard(
                             imagePath: 'assets/images/up_arrow_icon.png',
-                            iconColor: const Color(0xFFDB2777),
-                            iconBgColor: const Color(0xFFFCE7F3),
+                            iconColor: Color(0xFFDB2777),
+                            iconBgColor: Color(0xFFFCE7F3),
                             title: 'Link Clicks',
                             value: '392',
                           ),
@@ -157,7 +161,7 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                           Row(
                             children: [
                               Expanded(
-                                child: _buildActionButton(
+                                child: AutomationActionButton(
                                   label: 'Edit',
                                   onTap: () {
                                     Get.to(
@@ -168,7 +172,7 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _buildActionButton(
+                                child: AutomationActionButton(
                                   label: 'Paused',
                                   onTap: () {
                                     _showConfirmationDialog(
@@ -180,14 +184,14 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _buildActionButton(
+                                child: AutomationActionButton(
                                   label: 'Preview',
                                   onTap: () {},
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _buildActionButton(
+                                child: AutomationActionButton(
                                   label: 'Delete',
                                   onTap: () {
                                     _showConfirmationDialog(
@@ -288,6 +292,7 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    
                   ),
                   const SizedBox(width: 14),
 
@@ -320,284 +325,6 @@ class CommentShoeCollectionScreen extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAutomationActiveCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0), width: 1.2),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF059669),
-            ),
-            child: const Center(
-              child: Icon(Icons.check, color: Colors.white, size: 24),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Automation Active',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF059669),
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Your automation is live and responding to user automatically.',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 10.5,
-                    color: Colors.black87,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShoeCollectionCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              'assets/images/girl_image.png',
-              width: 58,
-              height: 58,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Shoe Collection',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Any Comments',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF6B4EFF),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Text(
-              'Live',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF059669),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBgColor,
-    required String title,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Center(child: Icon(icon, color: iconColor, size: 18)),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 10.5,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFullWidthStatCard({
-    IconData? icon,
-    String? imagePath,
-    required Color iconColor,
-    required Color iconBgColor,
-    required String title,
-    required String value,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: imagePath != null
-                  ? Image.asset(
-                      imagePath,
-                      width: 18,
-                      height: 18,
-                      color: iconColor,
-                    )
-                  : Icon(icon, color: iconColor, size: 18),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3E8FF),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
           ),
         ),
       ),

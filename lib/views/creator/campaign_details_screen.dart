@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/creator_widget/campaign_info_chip.dart';
+import '../../widgets/creator_widget/campaign_pills_card.dart';
+import '../../widgets/creator_widget/automation_live_dialog.dart';
 
 class CampaignDetailsScreen extends StatefulWidget {
   final String? brandName;
@@ -178,7 +181,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                               color: Colors.black,
                                             ),
                                           ),
-                                          _buildInfoChip(
+                                          CampaignInfoChip(
                                             icon: Icons.calendar_month_outlined,
                                             label: '5 days',
                                             fontWeight: FontWeight.w500,
@@ -187,7 +190,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                       ),
                                       const SizedBox(height: 12),
 
-                                      _buildInfoChip(
+                                      CampaignInfoChip(
                                         image: Image.asset(
                                           'assets/images/money_icon.png',
                                           color: const Color(0xFF9E8EFE),
@@ -219,17 +222,17 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                       ),
                                       const SizedBox(height: 8),
 
-                                      _buildPillsCard(
+                                      CampaignPillsCard(
                                         items: [
-                                          _PillItem(
+                                          PillItem(
                                             icon: Icons.movie_outlined,
                                             label: displayReel,
                                           ),
-                                          _PillItem(
+                                          PillItem(
                                             icon: Icons.play_circle_outline,
                                             label: displayStory,
                                           ),
-                                          _PillItem(
+                                          PillItem(
                                             image: Image.asset(
                                               'assets/images/instagram_icon.png',
                                               color: const Color(0xFF6B4EFF),
@@ -261,13 +264,13 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                       ),
                                       const SizedBox(height: 8),
 
-                                      _buildPillsCard(
+                                      CampaignPillsCard(
                                         items: [
-                                          _PillItem(
+                                          PillItem(
                                             icon: Icons.person_outline_rounded,
                                             label: displayFollowers,
                                           ),
-                                          _PillItem(
+                                          PillItem(
                                             image: Image.asset(
                                               'assets/images/age_icon.png',
                                               color: const Color(0xFF6B4EFF),
@@ -285,7 +288,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                             ),
                                             label: 'Age 18-25',
                                           ),
-                                          _PillItem(
+                                          PillItem(
                                             image: Image.asset(
                                               'assets/images/male_icon.png',
                                               color: const Color(0xFF6B4EFF),
@@ -432,7 +435,18 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                             isGradient: true,
                             width: double.infinity,
                             textColor: Colors.white,
-                            onTap: () {},
+                            onTap: () {
+                              AutomationLiveDialog.show(
+                                context,
+                                title: 'Application Sent!',
+                                description:
+                                    'Your application has been submitted successfully.',
+                                buttonText: 'Okay',
+                                onOkay: () {
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
                           ),
                           const SizedBox(height: 32),
                         ],
@@ -447,109 +461,4 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       ),
     );
   }
-
-  Widget _buildInfoChip({
-    IconData? icon,
-    Widget? image,
-    String prefixText = '',
-    required String label,
-    FontWeight fontWeight = FontWeight.w600,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEBE8FC),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: image != null
-              ? SizedBox(width: 22, height: 22, child: image)
-              : Icon(icon, size: 22, color: const Color(0xFF9E8EFE)),
-        ),
-        const SizedBox(width: 10),
-        Text.rich(
-          TextSpan(
-            children: [
-              if (prefixText.isNotEmpty)
-                TextSpan(
-                  text: prefixText,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black87,
-                  ),
-                ),
-              TextSpan(
-                text: label,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 15,
-                  fontWeight: fontWeight,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPillsCard({required List<_PillItem> items}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDE8FF),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: IntrinsicHeight(
-        child: Row(
-          children: List.generate(items.length * 2 - 1, (i) {
-            if (i.isOdd) {
-              return const VerticalDivider(
-                color: Color(0xFFB8A8FF),
-                thickness: 1,
-                width: 1,
-              );
-            }
-            final item = items[i ~/ 2];
-            return Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  item.image != null
-                      ? SizedBox(width: 22, height: 22, child: item.image)
-                      : Icon(
-                          item.icon,
-                          size: 24,
-                          color: const Color(0xFF6B4EFF),
-                        ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.label,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D007C),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-class _PillItem {
-  final IconData? icon;
-  final Widget? image;
-  final String label;
-  const _PillItem({this.icon, this.image, required this.label});
 }

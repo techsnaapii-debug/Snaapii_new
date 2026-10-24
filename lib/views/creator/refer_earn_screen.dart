@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_button.dart';
+import 'package:snaapii/widgets/creator_widget/referral_option_tile.dart';
 import 'how_work_screen.dart';
 
 class ReferEarnScreen extends StatefulWidget {
@@ -289,21 +290,21 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        _buildOptionTile(
+                        ReferralOptionTile(
                           icon: Icons.person_rounded,
                           title: 'My Referrals',
                           onTap: () {},
                         ),
                         const SizedBox(height: 10),
 
-                        _buildOptionTile(
+                        ReferralOptionTile(
                           icon: Icons.autorenew_rounded,
                           title: 'Pending',
                           onTap: () {},
                         ),
                         const SizedBox(height: 10),
 
-                        _buildOptionTile(
+                        ReferralOptionTile(
                           icon: Icons.check_circle_rounded,
                           title: 'Successful',
                           onTap: () {},
@@ -393,58 +394,6 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2D6FF), width: 1.2),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14.0),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF3EBFF),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: const Color(0xFF9E8EFE), size: 20),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF9E8EFE),
-                size: 26,
-              ),
-            ],
           ),
         ),
       ),

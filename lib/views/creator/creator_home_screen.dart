@@ -5,12 +5,23 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../brand/ai/ai_screen.dart';
 import '../brand/my_campaign/video_player_screen.dart';
-import 'creator_chat_screen.dart';
-import 'creator_profile_screen.dart';
-import 'explore_screen.dart';
+import '../brand/articles/article_screen.dart';
+import '../brand/account_recovery/account_recovery_screen.dart';
 import 'audio_screen.dart';
 import 'smart_auto_dm_screen.dart';
 import 'wallet_screen.dart';
+import 'campaign_details_screen.dart';
+import 'creator_search_screen.dart';
+import 'collab_charges_screen.dart';
+import 'media_kit_screen.dart';
+import 'refer_earn_screen.dart';
+import 'growth_tips_reel_screen.dart';
+import 'explore_screen.dart';
+import 'notification_screen.dart';
+import 'package:snaapii/widgets/creator_widget/marquee_text.dart';
+import 'package:snaapii/widgets/creator_widget/creator_bottom_nav_bar.dart';
+import 'package:snaapii/widgets/creator_widget/suggest_campaign_card.dart';
+import 'package:snaapii/widgets/creator_widget/creator_footer_block.dart';
 
 class CreatorHomeScreen extends StatefulWidget {
   const CreatorHomeScreen({super.key});
@@ -20,7 +31,6 @@ class CreatorHomeScreen extends StatefulWidget {
 }
 
 class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
-  int _selectedTabIndex = 0;
   int _currentBannerIndex = 0;
   late final PageController _bannerPageController;
   Timer? _bannerTimer;
@@ -99,7 +109,21 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
 
                           const SizedBox(height: 24),
 
-                          _buildSuggestCampaignSection(),
+                          SuggestCampaignCard(
+                            onReadMore: () {
+                              Get.to(
+                                () => const CampaignDetailsScreen(
+                                  brandName: 'Gucci',
+                                  category: 'Lifestyle',
+                                  imagePath: 'assets/images/bancy.png',
+                                  followers: '10K',
+                                  reel: 'Reel 2',
+                                  story: 'Story 1',
+                                  post: 'Post 1',
+                                ),
+                              );
+                            },
+                          ),
 
                           const SizedBox(height: 24),
 
@@ -111,7 +135,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
 
                           const SizedBox(height: 36),
 
-                          _buildFooterBlock(),
+                          const CreatorFooterBlock(),
 
                           const SizedBox(height: 100),
                         ],
@@ -119,7 +143,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
                     ),
                   ),
 
-                  _buildBottomNavigationBar(),
+                  const CreatorBottomNavBar(selectedTabIndex: 0),
                 ],
               ),
             ),
@@ -161,7 +185,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
           Row(
             children: [
               _buildTopIconCircle(
-                Icons.play_circle_outline,
+                icon: Icons.play_circle_outline,
                 onTap: () {
                   Get.to(
                     () => const VideoPlayerScreen(
@@ -175,12 +199,14 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
               ),
               const SizedBox(width: 8),
               _buildTopIconCircle(
-                Icons.notifications_none_outlined,
-                onTap: () {},
+                icon: Icons.notifications_none_outlined,
+                onTap: () {
+                  Get.to(() => const NotificationScreen());
+                },
               ),
               const SizedBox(width: 8),
               _buildTopIconCircle(
-                Icons.account_balance_wallet_outlined,
+                imagePath: 'assets/images/wallet_icon.png',
                 onTap: () {
                   Get.to(() => const WalletScreen());
                 },
@@ -192,7 +218,11 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
     );
   }
 
-  Widget _buildTopIconCircle(IconData icon, {required VoidCallback onTap}) {
+  Widget _buildTopIconCircle({
+    IconData? icon,
+    String? imagePath,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -203,7 +233,16 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
         ),
-        child: Icon(icon, color: Colors.black, size: 20),
+        child: Center(
+          child: imagePath != null
+              ? Image.asset(
+                  imagePath,
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
+                )
+              : Icon(icon, color: Colors.black, size: 20),
+        ),
       ),
     );
   }
@@ -211,39 +250,46 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFD6C8FF), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            const Icon(Icons.search, color: Color(0xFFCCCCCC), size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 15,
-                  color: Colors.black,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  hintStyle: const TextStyle(
+      child: GestureDetector(
+        onTap: () {
+          Get.to(() => const CreatorSearchScreen());
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFD6C8FF), width: 1.5),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              const Icon(Icons.search, color: Color(0xFFCCCCCC), size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  enabled: false,
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 15,
-                    color: Color(0xFFCCCCCC),
+                    color: Colors.black,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Search',
+                    hintStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      color: Color(0xFFCCCCCC),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -330,257 +376,208 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
   }
 
   Widget _buildActionCategories() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildActionItem(
-            'assets/images/ai_icon.png',
-            'AI',
-            onTap: () {
-              Get.to(() => const AiScreen());
-            },
+    final List<Map<String, dynamic>> items = [
+      {
+        'icon': 'assets/images/ai_icon.png',
+        'label': 'AI',
+        'onTap': () => Get.to(() => const AiScreen()),
+      },
+      {
+        'icon': 'assets/images/smart_dm_icon.png',
+        'label': 'Smart Auto DM',
+        'onTap': () => Get.to(() => const SmartAutoDmScreen()),
+      },
+      {
+        'icon': 'assets/images/invite_earn_icon.png',
+        'label': 'Invite & Earn',
+        'onTap': () => Get.to(() => const ReferEarnScreen()),
+      },
+      {
+        'icon': 'assets/images/article_icon.png',
+        'label': 'Articles',
+        'onTap': () => Get.to(() => const ArticleScreen()),
+      },
+      {
+        'icon': 'assets/images/collab_charges_icon.png',
+        'label': 'Collab charges',
+        'onTap': () => Get.to(() => const CollabChargesScreen()),
+      },
+      {
+        'icon': 'assets/images/account_recovery_icon.png',
+        'label': 'Account Recovery',
+        'onTap': () => Get.to(() => const AccountRecoveryScreen()),
+      },
+      {
+        'icon': 'assets/images/invoice_generate_icon.png',
+        'label': 'Invoice Generator',
+        'onTap': () {},
+      },
+      {
+        'icon': 'assets/images/creator_cam_icon.png',
+        'label': 'Creator Cam',
+        'onTap': () {},
+      },
+      {
+        'label': 'Instagram Health',
+        'customPadding': EdgeInsets.zero,
+        'customIconWidget': SizedBox(
+          width: 46,
+          height: 30,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              _buildThickenedIcon(
+                Image.asset(
+                  'assets/images/circle_icon.png',
+                  width: 25,
+                  height: 25,
+                  fit: BoxFit.contain,
+                ),
+                spread: 0.6,
+              ),
+              Transform.translate(
+                offset: const Offset(-3.5, 0),
+                child: _buildThickenedIcon(
+                  Image.asset(
+                    'assets/images/instagram_health_icon.png',
+                    width: 30,
+                    fit: BoxFit.contain,
+                  ),
+                  spread: 0.6,
+                ),
+              ),
+            ],
           ),
-          _buildActionItem(
-            'assets/images/smart_dm_icon.png',
-            'Smart Auto DM',
-            onTap: () {
-              Get.to(() => const SmartAutoDmScreen());
-            },
-          ),
-          _buildActionItem(
-            'assets/images/invite_earn_icon.png',
-            'Invite & Earn',
-            customPadding: const EdgeInsets.all(32),
-            onTap: () {},
-          ),
-        ],
+        ),
+        'onTap': () {},
+      },
+      {
+        'icon': 'assets/images/brand_insight_icon.png',
+        'label': 'Growth tips',
+        'onTap': () => Get.to(() => const GrowthTipsReelScreen()),
+      },
+      {
+        'icon': 'assets/images/brand_insight_icon.png',
+        'label': 'IG Trending Audio',
+        'onTap': () => Get.to(() => const AudioScreen()),
+      },
+      {
+        'icon': 'assets/images/create_compaign_icon.png',
+        'label': 'Exploer Campaign',
+        'onTap': () => Get.to(() => const ExploreScreen()),
+      },
+      {
+        'icon': 'assets/images/media_kit_icon.png',
+        'label': 'Media kit',
+        'onTap': () => Get.to(() => const MediaKitScreen()),
+      },
+    ];
+
+    return SizedBox(
+      height: 120,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: items.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return _buildActionItem(
+            item['icon'] as String?,
+            item['label'] as String,
+            onTap: item['onTap'] as VoidCallback?,
+            customPadding: item['customPadding'] as EdgeInsetsGeometry?,
+            customIconWidget: item['customIconWidget'] as Widget?,
+          );
+        },
       ),
     );
   }
 
   Widget _buildActionItem(
-    String iconPath,
+    String? iconPath,
     String label, {
     VoidCallback? onTap,
     EdgeInsetsGeometry? customPadding,
+    Widget? customIconWidget,
   }) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          Container(
-            width: 95,
-            height: 95,
-            padding: customPadding ?? const EdgeInsets.all(36),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              image: DecorationImage(
-                image: AssetImage('assets/images/ai_bg.png'),
-                fit: BoxFit.cover,
+      child: SizedBox(
+        width: 85,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 85,
+              height: 85,
+              padding: customPadding ?? const EdgeInsets.all(30),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: AssetImage('assets/images/ai_bg.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Center(
+                child: Transform.translate(
+                  offset: const Offset(0, -4),
+                  child:
+                      customIconWidget ??
+                      Image.asset(iconPath!, fit: BoxFit.contain),
+                ),
               ),
             ),
-            child: Center(
-              child: Transform.translate(
-                offset: const Offset(0, -5),
-                child: Image.asset(iconPath, fit: BoxFit.contain),
+            Transform.translate(
+              offset: const Offset(0, -14),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                  height: 1.1,
+                ),
               ),
             ),
-          ),
-          Transform.translate(
-            offset: const Offset(0, -16),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-                height: 1.0,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSuggestCampaignSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Suggest campaign',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E1A34),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: const Color(0xFFDCD6CD),
-                    child: Image.asset(
-                      'assets/images/bancy.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Gucci',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1A34),
-                      ),
-                    ),
-                    Row(
-                      children: const [
-                        Text(
-                          'Follower : ',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E1A34),
-                          ),
-                        ),
-                        Icon(Icons.person, size: 23, color: Colors.black),
-                        SizedBox(width: 2),
-                        Text(
-                          '10K',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          color: Color(0xFF1E1A34),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Per Reel :  ₹ ',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          TextSpan(
-                            text: '1000',
-                            style: TextStyle(fontWeight: FontWeight.w400),
-                          ),
-                        ],
-                      ),
-                    ),
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          color: Color(0xFF1E1A34),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Category : ',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          TextSpan(
-                            text: 'Lifestyle',
-                            style: TextStyle(fontWeight: FontWeight.w400),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Read more',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF555555),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 60,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF7A58FF), Color(0xFF9E8EFE)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Text(
-                        'Apply',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+  Widget _buildThickenedIcon(Widget icon, {double spread = 0.6}) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Transform.translate(offset: Offset(-spread, 0), child: icon),
+        Transform.translate(offset: Offset(spread, 0), child: icon),
+        Transform.translate(offset: Offset(0, -spread), child: icon),
+        Transform.translate(offset: Offset(0, spread), child: icon),
+        Transform.translate(
+          offset: Offset(-spread * 0.7, -spread * 0.7),
+          child: icon,
+        ),
+        Transform.translate(
+          offset: Offset(spread * 0.7, spread * 0.7),
+          child: icon,
+        ),
+        Transform.translate(
+          offset: Offset(-spread * 0.7, spread * 0.7),
+          child: icon,
+        ),
+        Transform.translate(
+          offset: Offset(spread * 0.7, -spread * 0.7),
+          child: icon,
+        ),
+        icon,
+      ],
     );
   }
 
@@ -739,24 +736,32 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
           ),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Smart strategies to grow faster with creators',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
+              GestureDetector(
+                onTap: () => Get.to(() => const GrowthTipsReelScreen()),
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Expanded(
+                      child: Text(
+                        'Smart strategies to grow faster with creators',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right, color: Color(0xFF9E8EFE), size: 20),
-                ],
+                    Icon(
+                      Icons.chevron_right,
+                      color: Color(0xFF9E8EFE),
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -766,6 +771,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
                   physics: const BouncingScrollPhysics(),
                   children: [
                     _buildInsightCard(
+                      index: 0,
                       title:
                           'Smart strategy: Creative Sound design in video campaigns',
                       videoAssetPath: 'assets/images/dvideo_1.mp4',
@@ -783,6 +789,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildInsightCard(
+                      index: 1,
                       title:
                           'Brand Growth: Jazz Festival Live Concert Marketing',
                       child: Container(
@@ -821,6 +828,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildInsightCard(
+                      index: 2,
                       title:
                           'Live Streaming Sessions: Organic reach strategies',
                       child: Container(
@@ -861,17 +869,22 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
     required Widget child,
     required String duration,
     String? videoAssetPath,
+    int? index,
   }) {
     return GestureDetector(
       onTap: () {
-        Get.to(
-          () => VideoPlayerScreen(
-            title: title,
-            duration: duration,
-            previewWidget: child,
-            videoAssetPath: videoAssetPath,
-          ),
-        );
+        if (index != null) {
+          Get.to(() => GrowthTipsReelScreen(initialIndex: index));
+        } else {
+          Get.to(
+            () => VideoPlayerScreen(
+              title: title,
+              duration: duration,
+              previewWidget: child,
+              videoAssetPath: videoAssetPath,
+            ),
+          );
+        }
       },
       child: Container(
         width: 120,
@@ -917,255 +930,6 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFooterBlock() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: const Text(
-              'Everything a Creator\nNeeds. 🚀',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFC5C5C5),
-                height: 1.3,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Text(
-                'Protected with Official ',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  color: Color(0xFF666666),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(width: 13),
-              Image.asset(
-                'assets/images/meta.png',
-                width: 30,
-                height: 30,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 13),
-              const Text(
-                'Meta APIs',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  color: Color(0xFF666666),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const Text(
-            'Security',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              color: Color(0xFF666666),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: 24,
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: const Color(0xFF9E8EFE),
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF9E8EFE).withValues(alpha: 0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            GestureDetector(
-              onTap: () => setState(() => _selectedTabIndex = 0),
-              child: _buildNavIcon(
-                'assets/images/home_icon.png',
-                isActive: _selectedTabIndex == 0,
-                width: 20,
-                height: 20,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => Get.to(() => const ExploreScreen()),
-              child: _buildNavIcon(
-                'assets/images/explore_icon.png',
-                isActive: _selectedTabIndex == 1,
-                width: 22,
-                height: 20,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => Get.to(() => const AiScreen()),
-              child: _buildNavIcon(
-                'assets/images/ai_icon.png',
-                isActive: _selectedTabIndex == 2,
-                width: 24,
-                height: 20,
-              ),
-            ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Get.to(() => const CreatorChatScreen()),
-              child: _buildNavIcon(
-                'assets/images/message_icon.png',
-                isActive: _selectedTabIndex == 3,
-                width: 21,
-                height: 20,
-              ),
-            ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Get.to(() => const CreatorProfileScreen()),
-              child: _buildNavIcon(
-                'assets/images/person_icon.png',
-                isActive: _selectedTabIndex == 4,
-                width: 20,
-                height: 20,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavIcon(
-    dynamic icon, {
-    bool isActive = false,
-    double width = 24,
-    double height = 24,
-  }) {
-    return Container(
-      color: Colors.transparent,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedScale(
-            scale: isActive ? 1.25 : 1.0,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutBack,
-            child: icon is IconData
-                ? Icon(icon, color: Colors.white, size: height)
-                : Image.asset(
-                    icon,
-                    width: width,
-                    height: height,
-                    color: Colors.white,
-                    fit: BoxFit.contain,
-                  ),
-          ),
-          if (isActive) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: 30,
-              height: 2.5,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class MarqueeText extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-
-  const MarqueeText({super.key, required this.text, required this.style});
-
-  @override
-  State<MarqueeText> createState() => _MarqueeTextState();
-}
-
-class _MarqueeTextState extends State<MarqueeText>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _offsetAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 2500),
-      vsync: this,
-    );
-
-    _offsetAnimation = TweenSequence<Offset>([
-      TweenSequenceItem(
-        tween: Tween<Offset>(
-          begin: const Offset(1.5, 0.0),
-          end: Offset.zero,
-        ).chain(CurveTween(curve: Curves.fastOutSlowIn)),
-        weight: 20,
-      ),
-      TweenSequenceItem(tween: ConstantTween<Offset>(Offset.zero), weight: 50),
-      TweenSequenceItem(
-        tween: Tween<Offset>(
-          begin: Offset.zero,
-          end: const Offset(-1.5, 0.0),
-        ).chain(CurveTween(curve: Curves.fastOutSlowIn)),
-        weight: 20,
-      ),
-      TweenSequenceItem(
-        tween: ConstantTween<Offset>(const Offset(1.5, 0.0)),
-        weight: 10,
-      ),
-    ]).animate(_controller);
-
-    _controller.repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _offsetAnimation,
-      child: Text(
-        widget.text,
-        style: widget.style,
-        maxLines: 1,
-        overflow: TextOverflow.visible,
       ),
     );
   }

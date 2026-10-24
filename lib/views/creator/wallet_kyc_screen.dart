@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_button.dart';
+import 'package:snaapii/widgets/creator_widget/kyc_sheet_top_clipper.dart';
 import 'add_withdrawal_account_screen.dart';
 import 'kyc_verification_screen.dart';
+import 'package:snaapii/widgets/creator_widget/wallet_balance_card.dart';
+import 'package:snaapii/widgets/creator_widget/wallet_note_block.dart';
 
 class WalletKycScreen extends StatefulWidget {
   final String? amount;
@@ -82,63 +85,16 @@ class _WalletKycScreenState extends State<WalletKycScreen> {
 
                   const SizedBox(height: 16),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 24.0,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFBA8FFF), Color(0xFF6C63FF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF6C63FF,
-                            ).withValues(alpha: 0.25),
-                            blurRadius: 15,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text(
-                            'Current Balance',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            '₹2000.45',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 32,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: WalletBalanceCard(balance: '₹2000.45'),
                   ),
 
                   const SizedBox(height: 16),
 
                   Expanded(
                     child: ClipPath(
-                      clipper: const _KycSheetTopClipper(),
+                      clipper: const KycSheetTopClipper(),
                       child: Container(
                         width: double.infinity,
                         color: const Color(0xFFF3EFFF),
@@ -277,27 +233,12 @@ class _WalletKycScreenState extends State<WalletKycScreen> {
 
                               const SizedBox(height: 28),
 
-                              const Text(
-                                'Note',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-
-                              _buildNoteItem(
-                                '1. Manage your Finance effortlessly',
-                              ),
-                              const SizedBox(height: 6),
-                              _buildNoteItem(
-                                '2. Manage your Finance effortlessly',
-                              ),
-                              const SizedBox(height: 6),
-                              _buildNoteItem(
-                                '3. Manage your Finance effortlessly',
+                              const WalletNoteBlock(
+                                notes: [
+                                  '1. Manage your Finance effortlessly',
+                                  '2. Manage your Finance effortlessly',
+                                  '3. Manage your Finance effortlessly',
+                                ],
                               ),
 
                               const SizedBox(height: 24),
@@ -316,53 +257,5 @@ class _WalletKycScreenState extends State<WalletKycScreen> {
     );
   }
 
-  Widget _buildNoteItem(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontFamily: 'Poppins',
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: Colors.black87,
-        height: 1.4,
-      ),
-    );
-  }
-}
 
-class _KycSheetTopClipper extends CustomClipper<Path> {
-  const _KycSheetTopClipper();
-
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    double curveHeight = 45.0;
-    double centerWidth = 180.0;
-    double leftX = (size.width - centerWidth) / 2;
-    double rightX = (size.width + centerWidth) / 2;
-
-    path.moveTo(0, curveHeight);
-    path.lineTo(leftX - 15, curveHeight);
-
-    path.cubicTo(leftX + 35, curveHeight, leftX + 35, 0, size.width / 2, 0);
-
-    path.cubicTo(
-      rightX - 35,
-      0,
-      rightX - 35,
-      curveHeight,
-      rightX + 15,
-      curveHeight,
-    );
-
-    path.lineTo(size.width, curveHeight);
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

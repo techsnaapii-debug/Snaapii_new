@@ -185,7 +185,7 @@ class _MyCampaignScreenState extends State<MyCampaignScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9E8EFE).withOpacity(0.4),
+              color: const Color(0xFF9E8EFE).withValues(alpha: 0.4),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),

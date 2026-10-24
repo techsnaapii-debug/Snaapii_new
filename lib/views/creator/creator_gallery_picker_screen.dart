@@ -3,18 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-
-class GalleryMediaItem {
-  final String path;
-  final bool isAsset;
-  final bool isVideo;
-
-  const GalleryMediaItem({
-    required this.path,
-    this.isAsset = true,
-    this.isVideo = false,
-  });
-}
+import 'package:snaapii/widgets/creator_widget/gallery_media_item.dart';
 
 class CreatorGalleryPickerScreen extends StatefulWidget {
   const CreatorGalleryPickerScreen({super.key});

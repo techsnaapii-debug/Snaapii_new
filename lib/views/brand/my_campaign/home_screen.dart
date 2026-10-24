@@ -8,10 +8,14 @@ import 'my_campaign_screen.dart';
 import '../ai/ai_screen.dart';
 import '../chat/chat_screen.dart';
 import '../profile/profile_screen_1.dart';
+import '../profile/wallet_screen.dart';
+import '../articles/article_screen.dart';
+import '../account_recovery/account_recovery_screen.dart';
 import '../../creator/explore_screen.dart';
 import '../../creator/creator_home_screen.dart';
 import '../../creator/creator_chat_screen.dart';
 import '../../creator/smart_auto_dm_screen.dart';
+import '../../creator/notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? isCreator;
@@ -163,11 +167,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Row(
             children: [
-              _buildTopIconCircle(Icons.play_circle_outline),
+              _buildTopIconCircle(icon: Icons.play_circle_outline),
               const SizedBox(width: 8),
-              _buildTopIconCircle(Icons.notifications_none_outlined),
+              _buildTopIconCircle(
+                icon: Icons.notifications_none_outlined,
+                onTap: () {
+                  Get.to(() => const NotificationScreen());
+                },
+              ),
               const SizedBox(width: 8),
-              _buildTopIconCircle(Icons.account_balance_wallet_outlined),
+              _buildTopIconCircle(
+                imagePath: 'assets/images/wallet_icon.png',
+                onTap: () {
+                  Get.to(() => const WalletScreen());
+                },
+              ),
             ],
           ),
         ],
@@ -175,16 +189,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopIconCircle(IconData icon) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
+  Widget _buildTopIconCircle({
+    IconData? icon,
+    String? imagePath,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
+        ),
+        child: Center(
+          child: imagePath != null
+              ? Image.asset(
+                  imagePath,
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
+                )
+              : Icon(icon, color: Colors.black, size: 20),
+        ),
       ),
-      child: Icon(icon, color: Colors.black, size: 20),
     );
   }
 
@@ -310,46 +340,59 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActionCategories() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildActionItem(
-            'assets/images/ai_icon.png',
-            'AI',
-            onTap: () {
-              Get.to(() => const AiScreen());
-            },
-          ),
-          _buildActionItem(
-            HomeScreen.isCreatorRole
-                ? 'assets/images/smart_dm_icon.png'
-                : 'assets/images/create_compaign_icon.png',
-            HomeScreen.isCreatorRole ? 'Smart Auto DM' : 'Create Campaign',
-            onTap: () {
-              if (!HomeScreen.isCreatorRole) {
-                Get.to(() => const MyCampaignScreen());
-              } else {
-                Get.to(() => const SmartAutoDmScreen());
-              }
-            },
-          ),
-          _buildActionItem(
-            HomeScreen.isCreatorRole
-                ? 'assets/images/invite_earn_icon.png'
-                : 'assets/images/smart_dm_icon.png',
-            HomeScreen.isCreatorRole ? 'Invite & Earn' : 'Smart Auto DM',
-            customPadding: HomeScreen.isCreatorRole
-                ? const EdgeInsets.all(24)
-                : null,
-            onTap: () {
-              if (!HomeScreen.isCreatorRole) {
-                Get.to(() => const SmartAutoDmScreen());
-              }
-            },
-          ),
-        ],
+    final List<Map<String, dynamic>> items = [
+      {
+        'icon': 'assets/images/ai_icon.png',
+        'label': 'AI',
+        'onTap': () => Get.to(() => const AiScreen()),
+      },
+      {
+        'icon': 'assets/images/create_compaign_icon.png',
+        'label': 'Create Campaign',
+        'onTap': () => Get.to(() => const MyCampaignScreen()),
+      },
+      {
+        'icon': 'assets/images/smart_dm_icon.png',
+        'label': 'Smart Auto DM',
+        'onTap': () => Get.to(() => const SmartAutoDmScreen()),
+      },
+      {
+        'icon': 'assets/images/article_icon.png',
+        'label': 'Articles',
+        'onTap': () => Get.to(() => const ArticleScreen()),
+      },
+      {
+        'icon': 'assets/images/account_recovery_icon.png',
+        'label': 'Account Recovery',
+        'onTap': () => Get.to(() => const AccountRecoveryScreen()),
+      },
+      {
+        'icon': 'assets/images/invoice_generate_icon.png',
+        'label': 'Invoice Generator',
+      },
+      {'icon': 'assets/images/creator_cam_icon.png', 'label': 'Creator Cam'},
+      {
+        'icon': 'assets/images/brand_insight_icon.png',
+        'label': 'Brand Insight',
+      },
+    ];
+
+    return SizedBox(
+      height: 120,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: items.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return _buildActionItem(
+            item['icon'] as String,
+            item['label'] as String,
+            onTap: item['onTap'] as VoidCallback?,
+          );
+        },
       ),
     );
   }
@@ -363,41 +406,47 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          Container(
-            width: 95,
-            height: 95,
-            padding: customPadding ?? const EdgeInsets.all(36),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              image: DecorationImage(
-                image: AssetImage('assets/images/ai_bg.png'),
-                fit: BoxFit.cover,
+      child: SizedBox(
+        width: 85,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 85,
+              height: 85,
+              padding: customPadding ?? const EdgeInsets.all(30),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: AssetImage('assets/images/ai_bg.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Center(
+                child: Transform.translate(
+                  offset: const Offset(0, -4),
+                  child: Image.asset(iconPath, fit: BoxFit.contain),
+                ),
               ),
             ),
-            child: Center(
-              child: Transform.translate(
-                offset: const Offset(0, -5),
-                child: Image.asset(iconPath, fit: BoxFit.contain),
+            Transform.translate(
+              offset: const Offset(0, -14),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                  height: 1.1,
+                ),
               ),
             ),
-          ),
-          Transform.translate(
-            offset: const Offset(0, -16),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-                height: 1.0,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
