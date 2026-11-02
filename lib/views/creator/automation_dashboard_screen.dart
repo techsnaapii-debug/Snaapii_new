@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../services/instagram_access_gate.dart';
 import 'comment_viewdetails_screen.dart';
 import 'dm_shoecollection_screen.dart';
 import 'smart_auto_dm_screen.dart';
@@ -101,8 +102,12 @@ class AutomationDashboardScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: GestureDetector(
-                      onTap: () {
-                        Get.to(() => const SmartAutoDmScreen());
+                      onTap: () async {
+                        if (await InstagramAccessGate.requireConnection(
+                          'Smart Auto DM',
+                        )) {
+                          Get.to(() => const SmartAutoDmScreen());
+                        }
                       },
                       behavior: HitTestBehavior.opaque,
                       child: Container(

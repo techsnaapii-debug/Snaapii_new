@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/auth_api.dart';
+import '../../../services/notification_service.dart';
 import '../../../widgets/custom_button.dart';
+import '../../creator/creator_home_screen.dart';
 import 'home_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool isCreator;
@@ -14,6 +20,56 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordObscured = true;
+  bool _isSubmitting = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_isSubmitting) return;
+    final login = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (login.isEmpty || password.isEmpty) {
+      _showMessage('Email and password are required.');
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      await AuthApi.login(
+        login: login,
+        password: password,
+        isCreator: widget.isCreator,
+      );
+      unawaited(NotificationService.registerCurrentToken());
+      if (!mounted) return;
+      HomeScreen.isCreatorRole = widget.isCreator;
+      Get.offAll(
+        () => widget.isCreator
+            ? const CreatorHomeScreen()
+            : const HomeScreen(isCreator: false),
+      );
+    } on ApiException catch (error) {
+      if (mounted) _showMessage(error.message);
+    } catch (_) {
+      if (mounted) _showMessage('Could not log in. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +132,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _buildLabel('Email:'),
                                   const SizedBox(height: 8),
                                   _buildTextField(
-                                    hintText: 'John Doe',
+                                    hintText: 'Email address',
+                                    controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                   ),
 
@@ -91,7 +148,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: TextButton(
-                                      onPressed: () {},
+                                      onPressed: () => Get.to(
+                                        () => const ForgotPasswordScreen(),
+                                      ),
                                       style: TextButton.styleFrom(
                                         padding: EdgeInsets.zero,
                                         minimumSize: Size.zero,
@@ -120,16 +179,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 horizontal: 32.0,
                               ),
                               child: CustomButton(
-                                text: 'Login',
+                                text: _isSubmitting ? 'Logging In...' : 'Login',
                                 width: 263.0,
                                 backgroundColor: const Color(0xFFF9F8FF),
                                 textColor: const Color(0xFF000000),
-                                onTap: () {
-                                  Get.offAll(
-                                    () =>
-                                        HomeScreen(isCreator: widget.isCreator),
-                                  );
-                                },
+                                onTap: _login,
                               ),
                             ),
 
@@ -162,6 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildTextField({
     required String hintText,
+    required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
@@ -173,7 +228,11 @@ class _LoginScreenState extends State<LoginScreen> {
         border: Border.all(color: const Color(0xFFD6C8FF), width: 1.5),
       ),
       child: TextField(
+        controller: controller,
         keyboardType: keyboardType,
+        autocorrect: false,
+        enableSuggestions: false,
+        textCapitalization: TextCapitalization.none,
         style: const TextStyle(
           fontFamily: 'Poppins',
           fontSize: 16,
@@ -206,7 +265,11 @@ class _LoginScreenState extends State<LoginScreen> {
         border: Border.all(color: const Color(0xFFD6C8FF), width: 1.5),
       ),
       child: TextField(
+        controller: _passwordController,
         obscureText: _isPasswordObscured,
+        autocorrect: false,
+        enableSuggestions: false,
+        textCapitalization: TextCapitalization.none,
         style: const TextStyle(
           fontFamily: 'Poppins',
           fontSize: 16,

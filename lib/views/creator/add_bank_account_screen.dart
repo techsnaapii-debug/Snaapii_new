@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'account_added_screen.dart';
+import '../../services/wallet_api.dart';
+import '../../services/auth_api.dart';
 
 class AddBankAccountScreen extends StatefulWidget {
   const AddBankAccountScreen({super.key});
@@ -20,6 +22,40 @@ class _AddBankAccountScreenState extends State<AddBankAccountScreen> {
 
   bool _obscureAccountNumber = true;
   bool _obscureConfirmAccountNumber = true;
+  bool _isSaving = false;
+
+  Future<void> _save() async {
+    final holder = _holderNameController.text.trim();
+    final account = _accountNumberController.text.trim();
+    final confirm = _confirmAccountNumberController.text.trim();
+    final ifsc = _ifscController.text.trim().toUpperCase();
+    if (holder.isEmpty || account.isEmpty || ifsc.isEmpty) {
+      _show('Enter all bank-account details.');
+      return;
+    }
+    if (account != confirm) {
+      _show('Account numbers do not match.');
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await WalletApi.addBankAccount(
+        accountNumber: account,
+        ifsc: ifsc,
+        holderName: holder,
+      );
+      if (mounted)
+        Get.off(() => const AccountAddedScreen(accountType: 'Bank Account'));
+    } on ApiException catch (error) {
+      if (mounted) _show(error.message);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _show(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 
   @override
   void dispose() {
@@ -164,13 +200,7 @@ class _AddBankAccountScreenState extends State<AddBankAccountScreen> {
 
                           Center(
                             child: GestureDetector(
-                              onTap: () {
-                                Get.to(
-                                  () => const AccountAddedScreen(
-                                    accountType: 'Bank Account',
-                                  ),
-                                );
-                              },
+                              onTap: _isSaving ? null : _save,
                               behavior: HitTestBehavior.opaque,
                               child: Container(
                                 width: double.infinity,
@@ -195,9 +225,9 @@ class _AddBankAccountScreenState extends State<AddBankAccountScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'Verify & Save',
+                                    _isSaving ? 'Saving...' : 'Verify & Save',
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 16,

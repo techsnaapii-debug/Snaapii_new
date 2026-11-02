@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/auth_api.dart';
 import '../../../widgets/custom_button.dart';
 import 'login_screen.dart';
 
@@ -15,6 +16,11 @@ class CreateAccountScreen extends StatefulWidget {
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _isPasswordObscured = true;
   bool _isAgreed = false;
+  bool _isSubmitting = false;
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   String _selectedCountryCode = '+91';
   final List<String> _countryCodes = [
     '+1',
@@ -30,6 +36,67 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     '+7',
     '+55',
   ];
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    if (_isSubmitting) return;
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      _showMessage('Name, email, and password are required.');
+      return;
+    }
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+      _showMessage('Enter a valid email address.');
+      return;
+    }
+    if (!_isAgreed) {
+      _showMessage('Please agree to the terms and conditions.');
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      await AuthApi.signup(
+        name: name,
+        phone: phone,
+        countryCode: _selectedCountryCode,
+        email: email,
+        password: password,
+        isCreator: widget.isCreator,
+      );
+      if (!mounted) return;
+      Get.off(() => LoginScreen(isCreator: widget.isCreator));
+      Get.snackbar('Account created', 'Please log in with your new account.');
+    } on ApiException catch (error) {
+      if (mounted) {
+        _showMessage(error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Could not create the account. Please try again.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +158,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 children: [
                                   _buildLabel('Name'),
                                   const SizedBox(height: 8),
-                                  _buildTextField(hintText: 'John Doe'),
+                                  _buildTextField(
+                                    hintText: 'John Doe',
+                                    controller: _nameController,
+                                  ),
 
                                   const SizedBox(height: 20),
 
@@ -105,6 +175,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                   const SizedBox(height: 8),
                                   _buildTextField(
                                     hintText: 'Doe12@gmail.com',
+                                    controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                   ),
 
@@ -167,6 +238,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   Widget _buildTextField({
     required String hintText,
+    required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
@@ -178,6 +250,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         border: Border.all(color: const Color(0xFFD6C8FF), width: 1.5),
       ),
       child: TextField(
+        controller: controller,
         keyboardType: keyboardType,
         style: const TextStyle(
           fontFamily: 'Poppins',
@@ -259,6 +332,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
           Expanded(
             child: TextField(
+              controller: _phoneController,
               keyboardType: TextInputType.phone,
               style: const TextStyle(
                 fontFamily: 'Poppins',
@@ -292,6 +366,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         border: Border.all(color: const Color(0xFFD6C8FF), width: 1.5),
       ),
       child: TextField(
+        controller: _passwordController,
         obscureText: _isPasswordObscured,
         style: const TextStyle(
           fontFamily: 'Poppins',
@@ -381,11 +456,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   Widget _buildSignUpButton() {
     return CustomButton(
-      text: 'Sign Up',
+      text: _isSubmitting ? 'Signing Up...' : 'Sign Up',
       width: 263.0,
       backgroundColor: const Color(0xFFF9F8FF),
       textColor: const Color(0xFF000000),
-      onTap: () {},
+      onTap: _signUp,
     );
   }
 

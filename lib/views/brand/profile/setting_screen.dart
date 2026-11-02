@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/auth_api.dart';
+import '../my_campaign/login_screen.dart';
 import 'about_screen.dart';
 import 'account_screen.dart';
 import 'contact_screen.dart';
@@ -8,6 +10,7 @@ import 'edit_profile_screen.dart';
 import 'feedback_screen.dart';
 import 'help_screen.dart';
 import 'wallet_screen.dart';
+import '../../shared/articles_screen.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -35,6 +38,7 @@ class _SettingScreenState extends State<SettingScreen> {
       'hasChevron': false,
     },
     {'title': 'About', 'icon': Icons.info_rounded, 'hasChevron': true},
+    {'title': 'Articles', 'icon': Icons.article_outlined, 'hasChevron': true},
     {'title': 'Feedback', 'icon': Icons.feedback_rounded, 'hasChevron': false},
     {
       'title': 'Contact',
@@ -137,9 +141,14 @@ class _SettingScreenState extends State<SettingScreen> {
 
                             return InkWell(
                               borderRadius: itemRadius,
-                              onTap: () {
+                              onTap: () async {
                                 if (item['title'] == 'Edit Profile') {
-                                  Get.to(() => const EditProfileScreen());
+                                  final didUpdate = await Get.to<bool>(
+                                    () => const EditProfileScreen(),
+                                  );
+                                  if (didUpdate == true && mounted) {
+                                    Get.back(result: true);
+                                  }
                                 } else if (item['title'] == 'Account') {
                                   Get.to(() => const AccountScreen());
                                 } else if (item['title'] == 'Wallet') {
@@ -148,6 +157,8 @@ class _SettingScreenState extends State<SettingScreen> {
                                   Get.to(() => const HelpScreen());
                                 } else if (item['title'] == 'About') {
                                   Get.to(() => const AboutScreen());
+                                } else if (item['title'] == 'Articles') {
+                                  Get.to(() => const ArticlesScreen());
                                 } else if (item['title'] == 'Feedback') {
                                   Get.to(() => const FeedbackScreen());
                                 } else if (item['title'] == 'Contact') {
@@ -270,8 +281,23 @@ class _SettingScreenState extends State<SettingScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: InkWell(
-                        onTap: () {
-                          Navigator.of(dialogContext).pop();
+                        onTap: () async {
+                          try {
+                            await AuthApi.logout();
+                            if (!dialogContext.mounted) return;
+                            Navigator.of(dialogContext).pop();
+                            Get.offAll(() => const LoginScreen());
+                          } catch (_) {
+                            if (dialogContext.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Could not log out. Please try again.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
                         },
                         borderRadius: BorderRadius.circular(30),
                         child: Container(

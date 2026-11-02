@@ -2,11 +2,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'automation_dashboard_screen.dart';
+import 'creator_home_screen.dart';
 
 class GoLiveScreen extends StatefulWidget {
   final File? selectedImage;
-  const GoLiveScreen({super.key, this.selectedImage});
+  final Map<String, dynamic>? selectedMedia;
+  final Map<String, dynamic>? instagramProfile;
+  final String automationTitle;
+
+  const GoLiveScreen({
+    super.key,
+    this.selectedImage,
+    this.selectedMedia,
+    this.instagramProfile,
+    this.automationTitle = 'Comment Automation',
+  });
 
   @override
   State<GoLiveScreen> createState() => _GoLiveScreenState();
@@ -20,6 +30,78 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  String? get _selectedMediaUrl {
+    final media = widget.selectedMedia;
+    if (media == null) return null;
+    for (final key in const [
+      'thumbnail_url',
+      'thumbnail',
+      'media_url',
+      'url',
+    ]) {
+      final value = media[key]?.toString();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  String get _username {
+    final profile = widget.instagramProfile;
+    final value = profile?['username']?.toString();
+    return value == null || value.isEmpty ? 'Instagram account' : value;
+  }
+
+  String? get _profileImageUrl {
+    final profile = widget.instagramProfile;
+    final value = profile?['profile_picture_url']?.toString();
+    return value == null || value.isEmpty ? null : value;
+  }
+
+  Widget _selectedMediaImage({
+    required BoxFit fit,
+    double? height,
+    double? width,
+  }) {
+    final url = _selectedMediaUrl;
+    if (url == null) {
+      return Container(
+        height: height,
+        width: width,
+        color: const Color(0xFFF3F4F6),
+        alignment: Alignment.center,
+        child: const Icon(Icons.image_outlined, color: Color(0xFF9CA3AF)),
+      );
+    }
+    return Image.network(
+      url,
+      height: height,
+      width: width,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) => Container(
+        height: height,
+        width: width,
+        color: const Color(0xFFF3F4F6),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.broken_image_outlined,
+          color: Color(0xFF9CA3AF),
+        ),
+      ),
+    );
+  }
+
+  Widget _profileAvatar(double radius) {
+    final imageUrl = _profileImageUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFFEDE9FE),
+      backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl),
+      child: imageUrl == null
+          ? const Icon(Icons.person, color: Color(0xFF6B4EFF))
+          : null,
+    );
   }
 
   @override
@@ -56,8 +138,8 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Smart Auto DM',
+                        Text(
+                          widget.automationTitle,
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 22,
@@ -70,8 +152,8 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  const Text(
-                    'Live Automations Preview',
+                  Text(
+                    '${widget.automationTitle} Preview',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 15,
@@ -148,11 +230,11 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
                     padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
                     child: GestureDetector(
                       onTap: () {
-                        Get.to(
-                          () => const AutomationDashboardScreen(
-                            automationType: 'comment',
-                            isDm: false,
-                          ),
+                        Get.offAll(() => const CreatorHomeScreen());
+                        Get.snackbar(
+                          'Automation created',
+                          'Your comment automation is ready to go live.',
+                          snackPosition: SnackPosition.BOTTOM,
                         );
                       },
                       behavior: HitTestBehavior.opaque,
@@ -202,9 +284,7 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
   Widget _buildSlide1() {
     return Stack(
       children: [
-        Positioned.fill(
-          child: Image.asset('assets/images/girl_image.png', fit: BoxFit.cover),
-        ),
+        Positioned.fill(child: _selectedMediaImage(fit: BoxFit.cover)),
 
         Positioned(
           top: 10,
@@ -299,21 +379,11 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
           bottom: 16,
           child: Row(
             children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/user_avatar.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+              _profileAvatar(13),
               const SizedBox(width: 8),
-              const Text(
-                'Riya',
-                style: TextStyle(
+              Text(
+                _username,
+                style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -352,12 +422,7 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
           flex: 9,
           child: Stack(
             children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/girl_image.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
+              Positioned.fill(child: _selectedMediaImage(fit: BoxFit.cover)),
               Positioned(
                 top: 10,
                 left: 16,
@@ -577,8 +642,7 @@ class _GoLiveScreenState extends State<GoLiveScreen> {
                               width: double.infinity,
                               fit: BoxFit.cover,
                             )
-                          : Image.asset(
-                              'assets/images/girl_image.png',
+                          : _selectedMediaImage(
                               height: 60,
                               width: double.infinity,
                               fit: BoxFit.cover,

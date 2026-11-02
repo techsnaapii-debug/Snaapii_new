@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../shared/role_navigation.dart';
 import '../ai/ai_screen.dart';
 import '../my_campaign/home_screen.dart';
 import '../my_campaign/my_campaign_screen.dart';
-import '../profile/profile_screen_1.dart';
 
 class ChatScreen3 extends StatefulWidget {
   const ChatScreen3({super.key});
@@ -319,7 +319,7 @@ class _ChatScreen3State extends State<ChatScreen3> {
             ),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Get.to(() => const ProfileScreen1()),
+              onTap: RoleNavigation.openCurrentProfile,
               child: _buildNavIcon(
                 'assets/images/person_icon.png',
                 isActive: _selectedTabIndex == 4,

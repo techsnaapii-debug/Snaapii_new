@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_button.dart';
+import '../../services/collaboration_api.dart';
+import '../../services/auth_api.dart';
 
 class CampaignDetailsScreen extends StatefulWidget {
   final String? brandName;
@@ -11,6 +13,7 @@ class CampaignDetailsScreen extends StatefulWidget {
   final String? reel;
   final String? story;
   final String? post;
+  final int? campaignId;
 
   const CampaignDetailsScreen({
     super.key,
@@ -21,6 +24,7 @@ class CampaignDetailsScreen extends StatefulWidget {
     this.reel,
     this.story,
     this.post,
+    this.campaignId,
   });
 
   @override
@@ -28,14 +32,92 @@ class CampaignDetailsScreen extends StatefulWidget {
 }
 
 class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
+  bool _applying = false;
+
+  Future<void> _showApplyDialog() async {
+    if (widget.campaignId == null) {
+      _message(
+        'This campaign cannot be applied to because its backend ID is missing.',
+      );
+      return;
+    }
+    final amount = TextEditingController();
+    final message = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Apply to Campaign'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amount,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Your offer amount'),
+            ),
+            TextField(
+              controller: message,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Message (optional)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final offer = num.tryParse(amount.text.trim());
+              if (offer == null || offer <= 0) {
+                _message('Enter a valid offer amount.');
+                return;
+              }
+              Navigator.pop(dialogContext);
+              await _apply(offer, message.text);
+            },
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
+    amount.dispose();
+    message.dispose();
+  }
+
+  Future<void> _apply(num amount, String message) async {
+    if (_applying) return;
+    setState(() => _applying = true);
+    try {
+      await CollaborationApi.applyToCampaign(
+        campaignId: widget.campaignId!,
+        amount: amount,
+        message: message,
+      );
+      if (mounted) {
+        _message('Application sent successfully.');
+        Get.back(result: true);
+      }
+    } on ApiException catch (error) {
+      if (mounted) _message(error.message);
+    } finally {
+      if (mounted) setState(() => _applying = false);
+    }
+  }
+
+  void _message(String text) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   @override
   Widget build(BuildContext context) {
     final String displayBrand = widget.brandName ?? 'Clothes Shop';
     final String displayCategory = widget.category ?? 'Lifestyle';
     final String displayImage =
-        (widget.imagePath != null && widget.imagePath!.isNotEmpty)
-        ? widget.imagePath!
-        : 'assets/images/banner_2.jpg';
+        widget.imagePath ?? 'assets/images/banner_2.jpg';
     final String displayFollowers = widget.followers ?? '10K';
     final String displayReel = widget.reel ?? 'Reel 1';
     final String displayStory = widget.story ?? 'Story 1';
@@ -117,26 +199,62 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                     padding: const EdgeInsets.all(10.0),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(
-                                        displayImage,
-                                        height: 145,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return Container(
-                                                height: 145,
-                                                color: const Color(0xFFEDE8FF),
-                                                child: const Center(
-                                                  child: Icon(
-                                                    Icons.image,
-                                                    size: 50,
-                                                    color: Color(0xFF9E8EFE),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                      ),
+                                      child: displayImage.isEmpty
+                                          ? const SizedBox(
+                                              height: 145,
+                                              child: Center(
+                                                child: Icon(Icons.image),
+                                              ),
+                                            )
+                                          : (displayImage.startsWith(
+                                                      'http://',
+                                                    ) ||
+                                                    displayImage.startsWith(
+                                                      'https://',
+                                                    )
+                                                ? Image.network(
+                                                    displayImage,
+                                                    height: 145,
+                                                    width: double.infinity,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, _, _) =>
+                                                        const SizedBox(
+                                                          height: 145,
+                                                          child: Center(
+                                                            child: Icon(
+                                                              Icons.image,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  )
+                                                : Image.asset(
+                                                    displayImage,
+                                                    height: 145,
+                                                    width: double.infinity,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Container(
+                                                            height: 145,
+                                                            color: const Color(
+                                                              0xFFEDE8FF,
+                                                            ),
+                                                            child: const Center(
+                                                              child: Icon(
+                                                                Icons.image,
+                                                                size: 50,
+                                                                color: Color(
+                                                                  0xFF9E8EFE,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                  )),
                                     ),
                                   ),
                                 ),
@@ -428,11 +546,11 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                           ),
                           const SizedBox(height: 12),
                           CustomButton(
-                            text: 'Apply',
+                            text: _applying ? 'Applying...' : 'Apply',
                             isGradient: true,
                             width: double.infinity,
                             textColor: Colors.white,
-                            onTap: () {},
+                            onTap: _applying ? () {} : _showApplyDialog,
                           ),
                           const SizedBox(height: 32),
                         ],

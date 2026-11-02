@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../services/home_api.dart';
 import 'autoreply_preview_automation_screen.dart';
 
 class AutoreplyAutomationScreen extends StatefulWidget {
@@ -14,7 +15,10 @@ class AutoreplyAutomationScreen extends StatefulWidget {
 class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
   final GlobalKey _dropdownKey = GlobalKey();
   bool _allPostReel = false;
-  int _selectedPostIndex = 1;
+  int _selectedPostIndex = 0;
+  List<Map<String, dynamic>> _instagramMedia = const [];
+  bool _isLoadingInstagramMedia = true;
+  String? _instagramMediaError;
   final TextEditingController _nameController = TextEditingController();
 
   bool _repliesPerReel = false;
@@ -37,20 +41,47 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
     'Immediately',
   ];
 
-  final List<Map<String, dynamic>> _posts = [
+  List<Map<String, dynamic>> get _posts => [
     {'isNext': true, 'title': 'Next Post\nor Reel', 'image': ''},
-    {
+    ..._instagramMedia.map((media) => {
       'isNext': false,
-      'title': 'Post 1',
-      'image': 'assets/images/girl_image.png',
-    },
-    {
-      'isNext': false,
-      'title': 'Post 2',
-      'image': 'assets/images/animate_girl.png',
-    },
-    {'isNext': false, 'title': 'Post 3', 'image': 'assets/images/bancy.png'},
+      'title': media['caption']?.toString().trim().isNotEmpty == true
+          ? media['caption'].toString()
+          : (media['media_type']?.toString().replaceAll('_', ' ') ?? 'Post'),
+      'image': HomeApi.mediaUrl(media['thumbnail_url'] ?? media['media_url']) ?? '',
+    }),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstagramMedia();
+  }
+
+  Future<void> _loadInstagramMedia() async {
+    try {
+      final media = await HomeApi.creatorInstagramMedia();
+      final selectableMedia = media.where((item) {
+        final type = item['media_type']?.toString().toUpperCase() ?? '';
+        return type == 'IMAGE' ||
+            type == 'VIDEO' ||
+            type == 'REELS' ||
+            type == 'CAROUSEL_ALBUM';
+      }).toList();
+      if (!mounted) return;
+      setState(() {
+        _instagramMedia = selectableMedia;
+        _isLoadingInstagramMedia = false;
+        if (selectableMedia.isNotEmpty) _selectedPostIndex = 1;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _instagramMediaError = error.toString();
+        _isLoadingInstagramMedia = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -345,6 +376,36 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
                           ),
                           const SizedBox(height: 14),
 
+                          if (_isLoadingInstagramMedia)
+                            const SizedBox(
+                              height: 135,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF6B4EFF),
+                                ),
+                              ),
+                            )
+                          else if (_instagramMedia.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F5FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _instagramMediaError == null
+                                    ? 'Connect Instagram and publish a post or reel to select it here.'
+                                    : 'Your Instagram posts could not be loaded. Please try again after reconnecting Instagram.',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: Color(0xFF5B4A9B),
+                                ),
+                              ),
+                            )
+                          else
+
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
@@ -399,10 +460,26 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
                                                 ),
                                               ),
                                             )
-                                          else
-                                            Image.asset(
-                                              post['image'],
+                                          else if ((post['image'] as String)
+                                              .isNotEmpty)
+                                            Image.network(
+                                              post['image'] as String,
                                               fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) => const ColoredBox(
+                                                color: Color(0xFFEDE9FE),
+                                                child: Icon(
+                                                  Icons.image_not_supported_outlined,
+                                                  color: Color(0xFF6B4EFF),
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            const ColoredBox(
+                                              color: Color(0xFFEDE9FE),
+                                              child: Icon(
+                                                Icons.image_not_supported_outlined,
+                                                color: Color(0xFF6B4EFF),
+                                              ),
                                             ),
 
                                           Positioned(
@@ -997,6 +1074,15 @@ class _AutoreplyAutomationScreenState extends State<AutoreplyAutomationScreen> {
                     padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
                     child: GestureDetector(
                       onTap: () {
+                        if (!_allPostReel &&
+                            (_selectedPostIndex == 0 || _instagramMedia.isEmpty)) {
+                          Get.snackbar(
+                            'Select a post or reel',
+                            'Choose one of your Instagram posts before continuing.',
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                          return;
+                        }
                         final selectedPost = _posts.length > _selectedPostIndex
                             ? _posts[_selectedPostIndex]['image']
                             : null;

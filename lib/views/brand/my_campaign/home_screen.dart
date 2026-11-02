@@ -1,17 +1,23 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'video_player_screen.dart';
+import '../../shared/role_navigation.dart';
+import '../../../services/home_api.dart';
+import '../../../services/instagram_access_gate.dart';
+import '../../../services/notification_api.dart';
+import '../../shared/home_media.dart';
 import 'my_campaign_screen.dart';
+import 'basic_details_screen.dart';
+import 'video_player_screen.dart';
 import '../ai/ai_screen.dart';
 import '../chat/chat_screen.dart';
-import '../profile/profile_screen_1.dart';
+import '../profile/wallet_screen.dart';
 import '../../creator/explore_screen.dart';
 import '../../creator/creator_home_screen.dart';
 import '../../creator/creator_chat_screen.dart';
 import '../../creator/smart_auto_dm_screen.dart';
+import '../../creator/refer_earn_screen.dart';
+import '../../shared/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? isCreator;
@@ -25,9 +31,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
-  int _currentBannerIndex = 0;
-  late final PageController _bannerPageController;
-  Timer? _bannerTimer;
+  List<Map<String, dynamic>> _banners = [];
+  List<Map<String, dynamic>> _videos = [];
+  String? _homeError;
+  String _search = '';
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
@@ -36,29 +44,26 @@ class _HomeScreenState extends State<HomeScreen> {
       HomeScreen.isCreatorRole = widget.isCreator!;
     }
 
-    _bannerPageController = PageController(initialPage: 300);
-    _currentBannerIndex = 0;
-    _startBannerAutoScroll();
+    if (!HomeScreen.isCreatorRole) _loadHome();
   }
 
-  void _startBannerAutoScroll() {
-    _bannerTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (_bannerPageController.hasClients) {
-        int nextPage = _bannerPageController.page!.round() + 1;
-        _bannerPageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _bannerTimer?.cancel();
-    _bannerPageController.dispose();
-    super.dispose();
+  Future<void> _loadHome() async {
+    try {
+      final results = await Future.wait([
+        HomeApi.banners(),
+        HomeApi.videos('brand'),
+        NotificationApi.unreadCount(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _banners = results[0] as List<Map<String, dynamic>>;
+        _videos = results[1] as List<Map<String, dynamic>>;
+        _unreadNotifications = results[2] as int;
+        _homeError = null;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _homeError = error.toString());
+    }
   }
 
   @override
@@ -84,40 +89,53 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Stack(
                 children: [
                   SafeArea(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
+                    child: RefreshIndicator(
+                      onRefresh: _loadHome,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 16),
 
-                          _buildTopBar(),
+                            _buildTopBar(),
 
-                          const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                          _buildSearchBar(),
+                            _buildSearchBar(),
 
-                          const SizedBox(height: 16),
+                            if (_homeError != null)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  _homeError!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
 
-                          _buildBannerSlider(),
+                            const SizedBox(height: 16),
 
-                          const SizedBox(height: 6),
+                            _buildBannerSlider(),
 
-                          _buildDotIndicators(),
+                            const SizedBox(height: 6),
 
-                          const SizedBox(height: 12),
+                            _buildDotIndicators(),
 
-                          _buildActionCategories(),
+                            const SizedBox(height: 12),
 
-                          const SizedBox(height: 10),
+                            _buildActionCategories(),
 
-                          _buildBrandInsights(),
+                            const SizedBox(height: 10),
 
-                          const SizedBox(height: 36),
+                            _buildBrandInsights(),
 
-                          _buildFooterBlock(),
+                            const SizedBox(height: 36),
 
-                          const SizedBox(height: 100),
-                        ],
+                            _buildFooterBlock(),
+
+                            const SizedBox(height: 100),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -149,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ClipRect(
               child: Center(
                 child: MarqueeText(
-                  text: '@Kumar joined',
+                  text: 'SNAAPII',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
@@ -163,11 +181,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Row(
             children: [
-              _buildTopIconCircle(Icons.play_circle_outline),
+              _buildTopIconCircle(
+                Icons.play_circle_outline,
+                onTap: () {
+                  if (_videos.isEmpty) return;
+                  final video = _videos.first;
+                  final url = HomeApi.mediaUrl(video['video_url']);
+                  if (url == null) return;
+                  Get.to(
+                    () => VideoPlayerScreen(
+                      title: video['title']?.toString() ?? 'Video',
+                      duration: '0:00',
+                      previewWidget: const SizedBox(),
+                      videoUrl: url,
+                    ),
+                  );
+                },
+              ),
               const SizedBox(width: 8),
-              _buildTopIconCircle(Icons.notifications_none_outlined),
+              _notificationButton(),
               const SizedBox(width: 8),
-              _buildTopIconCircle(Icons.account_balance_wallet_outlined),
+              _buildTopIconCircle(
+                Icons.account_balance_wallet_outlined,
+                onTap: () => Get.to(() => const WalletScreen()),
+              ),
             ],
           ),
         ],
@@ -175,18 +212,52 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopIconCircle(IconData icon) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
+  Widget _buildTopIconCircle(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
+        ),
+        child: Icon(icon, color: Colors.black, size: 20),
       ),
-      child: Icon(icon, color: Colors.black, size: 20),
     );
   }
+
+  Widget _notificationButton() => Stack(
+    clipBehavior: Clip.none,
+    children: [
+      _buildTopIconCircle(
+        Icons.notifications_none_outlined,
+        onTap: () async {
+          await Get.to(() => const NotificationsScreen());
+          if (mounted) _loadHome();
+        },
+      ),
+      if (_unreadNotifications > 0)
+        Positioned(
+          right: -2,
+          top: -2,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              _unreadNotifications > 9 ? '9+' : '$_unreadNotifications',
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+          ),
+        ),
+    ],
+  );
 
   Widget _buildSearchBar() {
     return Padding(
@@ -205,6 +276,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
+                onChanged: (value) =>
+                    setState(() => _search = value.trim().toLowerCase()),
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 15,
@@ -229,85 +302,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBannerSlider() {
-    final List<String> banners = [
-      'assets/images/login_banner.png',
-      'assets/images/banner_2.jpg',
-      'assets/images/banner_3.jpg',
-    ];
+  Widget _buildBannerSlider() => HomeBanners(banners: _banners);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        height: 180,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: PageView.builder(
-            controller: _bannerPageController,
-            itemCount: 9999,
-            allowImplicitScrolling: true,
-            onPageChanged: (index) {
-              setState(() {
-                _currentBannerIndex = index % banners.length;
-              });
-            },
-            itemBuilder: (context, index) {
-              final imageIndex = index % banners.length;
-              return Image.asset(
-                banners[imageIndex],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFFFFEBE3),
-                    child: Center(
-                      child: const Text(
-                        'Age of Sage Skincare Brand',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDotIndicators() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        3,
-        (index) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _currentBannerIndex == index
-                ? const Color(0xFF9E8EFE)
-                : const Color(0xFFEBE8FC),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildDotIndicators() => const SizedBox.shrink();
 
   Widget _buildActionCategories() {
     return Padding(
@@ -327,11 +324,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? 'assets/images/smart_dm_icon.png'
                 : 'assets/images/create_compaign_icon.png',
             HomeScreen.isCreatorRole ? 'Smart Auto DM' : 'Create Campaign',
-            onTap: () {
+            onTap: () async {
               if (!HomeScreen.isCreatorRole) {
-                Get.to(() => const MyCampaignScreen());
+                if (await InstagramAccessGate.requireConnection(
+                  'Create Campaign',
+                )) {
+                  Get.to(() => const BasicDetailsScreen());
+                }
               } else {
-                Get.to(() => const SmartAutoDmScreen());
+                if (await InstagramAccessGate.requireConnection(
+                  'Smart Auto DM',
+                )) {
+                  Get.to(() => const SmartAutoDmScreen());
+                }
               }
             },
           ),
@@ -343,9 +348,15 @@ class _HomeScreenState extends State<HomeScreen> {
             customPadding: HomeScreen.isCreatorRole
                 ? const EdgeInsets.all(24)
                 : null,
-            onTap: () {
-              if (!HomeScreen.isCreatorRole) {
-                Get.to(() => const SmartAutoDmScreen());
+            onTap: () async {
+              if (HomeScreen.isCreatorRole) {
+                Get.to(() => const ReferEarnScreen());
+              } else {
+                if (await InstagramAccessGate.requireConnection(
+                  'Smart Auto DM',
+                )) {
+                  Get.to(() => const SmartAutoDmScreen());
+                }
               }
             },
           ),
@@ -402,222 +413,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBrandInsights() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Brand Insights',
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9F8FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: const Text(
-                      'Smart strategies to grow faster with creators',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: Color(0xFF9E8EFE),
-                    size: 20,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              SizedBox(
-                height: 180,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _buildInsightCard(
-                      title:
-                          'Smart strategy: Creative Sound design in video campaigns',
-                      videoAssetPath: 'assets/images/dvideo_1.mp4',
-                      child: Container(
-                        color: const Color(0xFFECE6D9),
-                        child: Center(
-                          child: Icon(
-                            Icons.music_note,
-                            color: Colors.black.withValues(alpha: 0.3),
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                      duration: '1:03',
-                    ),
-                    const SizedBox(width: 12),
-                    _buildInsightCard(
-                      title:
-                          'Brand Growth: Jazz Festival Live Concert Marketing',
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF565EFA), Color(0xFF26C6DA)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'jazz',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const Text(
-                                'FESTIVAL',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      duration: '0:20',
-                    ),
-                    const SizedBox(width: 12),
-                    _buildInsightCard(
-                      title:
-                          'Live Streaming Sessions: Organic reach strategies',
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFB18CFF), Color(0xFFE040FB)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: const Text(
-                            'MUSIC',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                      duration: '0:15',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInsightCard({
-    required String title,
-    required Widget child,
-    required String duration,
-    String? videoAssetPath,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Get.to(
-          () => VideoPlayerScreen(
-            title: title,
-            duration: duration,
-            previewWidget: child,
-            videoAssetPath: videoAssetPath,
-          ),
-        );
-      },
-      child: Container(
-        width: 120,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            children: [
-              Positioned.fill(child: child),
-
-              Positioned(
-                left: 8,
-                bottom: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 10,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        duration,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildBrandInsights() => HomeVideos(
+    heading: 'Brand Insights',
+    videos: _videos
+        .where(
+          (video) =>
+              video['title']?.toString().toLowerCase().contains(_search) ??
+              false,
+        )
+        .toList(),
+  );
 
   Widget _buildFooterBlock() {
     return Padding(
@@ -761,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Get.to(() => const ProfileScreen1()),
+              onTap: RoleNavigation.openCurrentProfile,
               child: _buildNavIcon(
                 'assets/images/person_icon.png',
                 isActive: _selectedTabIndex == 4,

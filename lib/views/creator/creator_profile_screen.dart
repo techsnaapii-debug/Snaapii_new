@@ -7,6 +7,9 @@ import 'creator_home_screen.dart';
 import 'creator_setting_screen.dart';
 import 'explore_screen.dart';
 import 'instagram_screen.dart';
+import '../../services/profile_api.dart';
+import '../../services/home_api.dart';
+import '../../services/instagram_api.dart';
 
 class CreatorProfileScreen extends StatefulWidget {
   const CreatorProfileScreen({super.key});
@@ -15,9 +18,54 @@ class CreatorProfileScreen extends StatefulWidget {
   State<CreatorProfileScreen> createState() => _CreatorProfileScreenState();
 }
 
-class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
+class _CreatorProfileScreenState extends State<CreatorProfileScreen>
+    with WidgetsBindingObserver {
   int _selectedTabIndex = 4;
   int _selectedSubTab = 0;
+  String _name = '';
+  String _location = '';
+  String? _avatarUrl;
+  bool _instagramConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final results = await Future.wait<Object>([
+        ProfileApi.creatorProfile(),
+        InstagramApi.connectionStatus(),
+      ]);
+      final profile = results[0] as Map<String, dynamic>;
+      final instagram = results[1] as InstagramConnectionStatus;
+      if (!mounted) return;
+      setState(() {
+        _name = profile['name']?.toString() ?? '';
+        _location = [profile['city'], profile['state']]
+            .where((part) => part != null && part.toString().isNotEmpty)
+            .join(', ');
+        _avatarUrl = HomeApi.mediaUrl(profile['profile_picture_url']);
+        _instagramConnected = instagram.connected;
+      });
+    } catch (_) {
+      // Do not display another creator's placeholder profile.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +112,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
                               ],
                             ),
                             GestureDetector(
-                              onTap: () =>
-                                  Get.to(() => const CreatorSettingScreen()),
+                              onTap: () async {
+                                await Get.to(
+                                  () => const CreatorSettingScreen(),
+                                );
+                                _loadProfile();
+                              },
                               behavior: HitTestBehavior.opaque,
                               child: const Icon(
                                 Icons.menu_rounded,
@@ -94,26 +146,38 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
                                 Row(
                                   children: [
                                     ClipOval(
-                                      child: Image.asset(
-                                        'assets/images/user_avatar.png',
-                                        width: 92,
-                                        height: 92,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Container(
-                                                  width: 92,
-                                                  height: 92,
-                                                  color: const Color(
-                                                    0xFF9E8EFE,
+                                      child: _avatarUrl != null
+                                          ? Image.network(
+                                              _avatarUrl!,
+                                              width: 92,
+                                              height: 92,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) =>
+                                                  const Icon(Icons.person),
+                                            )
+                                          : Image.asset(
+                                              'assets/images/user_avatar.png',
+                                              width: 92,
+                                              height: 92,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => Container(
+                                                    width: 92,
+                                                    height: 92,
+                                                    color: const Color(
+                                                      0xFF9E8EFE,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.person,
+                                                      size: 50,
+                                                      color: Colors.white,
+                                                    ),
                                                   ),
-                                                  child: const Icon(
-                                                    Icons.person,
-                                                    size: 50,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                      ),
+                                            ),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
@@ -122,9 +186,9 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            children: const [
+                                            children: [
                                               Text(
-                                                'Richa ',
+                                                '${_name.isEmpty ? 'Creator' : _name} ',
                                                 style: TextStyle(
                                                   fontFamily: 'Poppins',
                                                   fontSize: 20,
@@ -132,8 +196,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
                                                   color: Colors.black,
                                                 ),
                                               ),
-                                              Text(
-                                                '(Beauty)',
+                                              const Text(
+                                                '(Creator)',
                                                 style: TextStyle(
                                                   fontFamily: 'Poppins',
                                                   fontSize: 14.5,
@@ -145,15 +209,15 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
                                           ),
                                           const SizedBox(height: 6),
                                           Row(
-                                            children: const [
-                                              Icon(
+                                            children: [
+                                              const Icon(
                                                 Icons.location_on,
                                                 color: Color(0xFF9E8EFE),
                                                 size: 18,
                                               ),
-                                              SizedBox(width: 4),
+                                              const SizedBox(width: 4),
                                               Text(
-                                                'New Delhi, Delhi',
+                                                _location,
                                                 style: TextStyle(
                                                   fontFamily: 'Poppins',
                                                   fontSize: 14,
@@ -428,7 +492,10 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
 
         Center(
           child: GestureDetector(
-            onTap: () => Get.to(() => const InstagramScreen()),
+            onTap: () async {
+              await Get.to(() => const InstagramScreen());
+              _loadProfile();
+            },
             behavior: HitTestBehavior.opaque,
             child: Container(
               width: 290,
@@ -458,9 +525,11 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
                     color: Colors.white,
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Verify with Instagram',
-                    style: TextStyle(
+                  Text(
+                    _instagramConnected
+                        ? 'Instagram Connected'
+                        : 'Verify with Instagram',
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

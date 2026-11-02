@@ -7,6 +7,10 @@ import '../my_campaign/home_screen.dart';
 import '../my_campaign/my_campaign_screen.dart';
 import '../../../widgets/custom_button.dart';
 import 'setting_screen.dart';
+import '../../../services/profile_api.dart';
+import '../../../services/auth_api.dart';
+import '../../../services/home_api.dart';
+import '../../../services/instagram_api.dart';
 
 class ProfileScreen1 extends StatefulWidget {
   const ProfileScreen1({super.key});
@@ -15,9 +19,105 @@ class ProfileScreen1 extends StatefulWidget {
   State<ProfileScreen1> createState() => _ProfileScreen1State();
 }
 
-class _ProfileScreen1State extends State<ProfileScreen1> {
+class _ProfileScreen1State extends State<ProfileScreen1>
+    with WidgetsBindingObserver {
   int _selectedTabIndex = 4;
   int _selectedSubTab = 0;
+  String _name = '';
+  String _email = '';
+  String _phone = '';
+  bool _instagramConnected = false;
+  Map<String, dynamic> _instagramProfile = const {};
+  bool _openingMetaLogin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadProfile();
+    _loadInstagramConnection();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_openingMetaLogin) {
+      _loadInstagramConnection();
+    }
+  }
+
+  Future<void> _loadInstagramConnection() async {
+    try {
+      final status = await InstagramApi.connectionStatus();
+      Map<String, dynamic> profile = const {};
+      if (status.connected) {
+        try {
+          final instagram = await HomeApi.creatorInstagramProfile();
+          profile = Map<String, dynamic>.from(
+            instagram['profile'] as Map? ?? const {},
+          );
+        } on ApiException {
+          // Keep the confirmed connection state even if data is still syncing.
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _instagramConnected = status.connected;
+          _instagramProfile = profile;
+        });
+      }
+    } on ApiException {
+      // Keep the connect action available if the status request fails.
+    }
+  }
+
+  Future<void> _connectInstagram() async {
+    if (_openingMetaLogin) return;
+    setState(() => _openingMetaLogin = true);
+    try {
+      await InstagramApi.startConnection();
+      if (mounted) {
+        Get.snackbar(
+          'Continue in Meta',
+          'Finish the Instagram login, then return to Snaapii.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } on ApiException catch (exception) {
+      if (mounted) {
+        Get.snackbar(
+          'Instagram connection',
+          exception.message,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingMetaLogin = false);
+    }
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final user = await ProfileApi.brandProfile();
+      if (!mounted) return;
+      setState(() {
+        _name = user['name']?.toString().isNotEmpty == true
+            ? user['name'].toString()
+            : [user['first_name'], user['last_name']]
+                  .where((part) => part != null && part.toString().isNotEmpty)
+                  .join(' ');
+        _email = user['email']?.toString() ?? '';
+        _phone = user['mobile_number']?.toString() ?? '';
+      });
+    } catch (_) {
+      // The profile will remain empty instead of showing another account's data.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +165,11 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                             ),
 
                             GestureDetector(
-                              onTap: () => Get.to(() => const SettingScreen()),
+                              onTap: () async {
+                                await Get.to(() => const SettingScreen());
+                                _loadProfile();
+                                _loadInstagramConnection();
+                              },
                               child: const Icon(
                                 Icons.menu_rounded,
                                 color: Colors.white,
@@ -101,8 +205,12 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                         shape: BoxShape.circle,
                                       ),
                                       alignment: Alignment.center,
-                                      child: const Text(
-                                        'GUCCI',
+                                      child: Text(
+                                        _name.isEmpty
+                                            ? '?'
+                                            : _name
+                                                  .substring(0, 1)
+                                                  .toUpperCase(),
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 13,
@@ -120,10 +228,11 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                         children: [
                                           const SizedBox(height: 2),
                                           RichText(
-                                            text: const TextSpan(
+                                            text: TextSpan(
                                               children: [
                                                 TextSpan(
-                                                  text: 'GUCCI ',
+                                                  text:
+                                                      '${_name.isEmpty ? 'Brand' : _name} ',
                                                   style: TextStyle(
                                                     fontFamily: 'Poppins',
                                                     fontSize: 17,
@@ -131,8 +240,8 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                                     color: Colors.black,
                                                   ),
                                                 ),
-                                                TextSpan(
-                                                  text: '(Cloth Shop)',
+                                                const TextSpan(
+                                                  text: '(Brand)',
                                                   style: TextStyle(
                                                     fontFamily: 'Poppins',
                                                     fontSize: 13.5,
@@ -144,8 +253,8 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                             ),
                                           ),
                                           const SizedBox(height: 6),
-                                          const Text(
-                                            'Gucci was founded in 1921 by Guccio Gucci (1881–1953) in Florence.',
+                                          Text(
+                                            _email,
                                             style: TextStyle(
                                               fontFamily: 'Poppins',
                                               fontSize: 11.8,
@@ -175,21 +284,23 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                       width: 1,
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.language,
                                         color: Colors.black87,
                                         size: 22,
                                       ),
-                                      SizedBox(width: 12),
-                                      Text(
-                                        'Website',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _email,
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -208,12 +319,12 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                       width: 1,
                                     ),
                                   ),
-                                  child: const Column(
+                                  child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Business Details',
+                                      const Text(
+                                        'Contact Details',
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 16,
@@ -221,15 +332,17 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
                                           color: Colors.black87,
                                         ),
                                       ),
-                                      SizedBox(height: 8),
-                                      Divider(
+                                      const SizedBox(height: 8),
+                                      const Divider(
                                         color: Color(0xFFE0D4FF),
                                         height: 1,
                                         thickness: 1,
                                       ),
-                                      SizedBox(height: 12),
+                                      const SizedBox(height: 12),
                                       Text(
-                                        'Founded in 1921 Location : Florence',
+                                        _phone.isEmpty
+                                            ? 'No phone number added'
+                                            : _phone,
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 14,
@@ -491,12 +604,20 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
 
         Center(
           child: CustomButton(
-            text: 'Connect Instagram',
+            text: _instagramConnected
+                ? 'Instagram Connected'
+                : _openingMetaLogin
+                ? 'Opening Meta...'
+                : 'Connect Instagram',
             isGradient: true,
             width: 270,
-            onTap: () {},
+            onTap: _openingMetaLogin ? () {} : _connectInstagram,
           ),
         ),
+        if (_instagramConnected) ...[
+          const SizedBox(height: 16),
+          _linkedInstagramAccount(),
+        ],
         const SizedBox(height: 12),
 
         const Center(
@@ -513,6 +634,65 @@ class _ProfileScreen1State extends State<ProfileScreen1> {
         ),
         const SizedBox(height: 25),
       ],
+    );
+  }
+
+  Widget _linkedInstagramAccount() {
+    final username = _instagramProfile['username']?.toString().trim();
+    final accountType = _instagramProfile['account_type']?.toString().trim();
+    final imageUrl = HomeApi.mediaUrl(_instagramProfile['profile_picture_url']);
+    final hasProfile = username != null && username.isNotEmpty;
+
+    return Container(
+      width: 290,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F6FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2DCFF)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: const Color(0xFF9E8EFE),
+            backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl),
+            child: imageUrl == null
+                ? const Icon(Icons.person, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasProfile ? '@$username' : 'Instagram connected',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF222222),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  accountType == null || accountType.isEmpty
+                      ? (hasProfile
+                            ? 'Connected account'
+                            : 'Account details are syncing')
+                      : accountType,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: Color(0xFF616161),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

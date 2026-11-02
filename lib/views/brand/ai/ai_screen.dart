@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/ai_api.dart';
+import '../../../services/auth_api.dart';
+import '../../shared/role_navigation.dart';
 import '../my_campaign/home_screen.dart';
 import '../my_campaign/my_campaign_screen.dart';
 import '../chat/chat_screen.dart';
 import '../chat/brand_chat_detail_screen.dart';
-import '../profile/profile_screen_1.dart';
 import '../../creator/explore_screen.dart';
 
 class AiScreen extends StatefulWidget {
@@ -17,9 +19,10 @@ class AiScreen extends StatefulWidget {
 
 class ChatMessage {
   final String userText;
-  final String aiResponse;
+  String? aiResponse;
+  String? error;
 
-  ChatMessage({required this.userText, required this.aiResponse});
+  ChatMessage({required this.userText, this.aiResponse, this.error});
 }
 
 class _AiScreenState extends State<AiScreen> {
@@ -27,6 +30,39 @@ class _AiScreenState extends State<AiScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  String? _chatId;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreLastConversation();
+  }
+
+  Future<void> _restoreLastConversation() async {
+    try {
+      final chatId = await AiApi.lastChatId();
+      if (chatId == null || chatId.isEmpty) return;
+      final history = await AiApi.history(chatId);
+      final messages = <ChatMessage>[];
+      for (final item in history) {
+        if (item.isUser) {
+          messages.add(ChatMessage(userText: item.message));
+        } else if (messages.isNotEmpty && messages.last.aiResponse == null) {
+          messages.last.aiResponse = item.message;
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        _chatId = chatId;
+        _messages.addAll(messages);
+      });
+      _scrollToBottom();
+    } on ApiException {
+      // A deleted server-side conversation must not block a new chat.
+      await AiApi.clearLastChat();
+    }
+  }
 
   @override
   void dispose() {
@@ -35,30 +71,38 @@ class _AiScreenState extends State<AiScreen> {
     super.dispose();
   }
 
-  void _sendMessage([String? text]) {
+  Future<void> _sendMessage([String? text]) async {
     final messageText = text ?? _messageController.text.trim();
-    if (messageText.isEmpty) return;
+    if (messageText.isEmpty || _isSending) return;
 
     _messageController.clear();
     FocusScope.of(context).unfocus();
 
+    final pendingMessage = ChatMessage(userText: messageText);
     setState(() {
-      _messages.add(
-        ChatMessage(
-          userText: messageText,
-          aiResponse: _getAiResponse(messageText),
-        ),
-      );
+      _isSending = true;
+      _messages.add(pendingMessage);
     });
 
     _scrollToBottom();
-  }
-
-  String _getAiResponse(String prompt) {
-    return "Here's a professional bio for your content creator lifestyle brand:\n\n"
-        "Content Creator | Lifestyle Enthusiast | Storyteller\n\n"
-        "I create engaging content that inspires, entertains, and connects.From lifestyle tips to behind-the-scenes moments, I share real Instagram Caption experiences to build a positive and creative community.\n\n"
-        "Let's collaborate and create something amazing together. ✨";
+    try {
+      final response = await AiApi.sendMessage(
+        message: messageText,
+        chatId: _chatId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _chatId = response.chatId;
+        pendingMessage.aiResponse = response.reply;
+        pendingMessage.error = null;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => pendingMessage.error = error.message);
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+      _scrollToBottom();
+    }
   }
 
   void _scrollToBottom() {
@@ -112,7 +156,9 @@ class _AiScreenState extends State<AiScreen> {
                                       onTap: () {
                                         setState(() {
                                           _messages.clear();
+                                          _chatId = null;
                                         });
+                                        AiApi.clearLastChat();
                                       },
                                       child: Container(
                                         width: 44,
@@ -241,7 +287,9 @@ class _AiScreenState extends State<AiScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 GestureDetector(
-                                  onTap: () => _sendMessage(),
+                                  onTap: _isSending
+                                      ? null
+                                      : () => _sendMessage(),
                                   child: Container(
                                     width: 42,
                                     height: 42,
@@ -249,11 +297,19 @@ class _AiScreenState extends State<AiScreen> {
                                       color: Color(0xFF9E8EFE),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
-                                      Icons.arrow_upward,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
+                                    child: _isSending
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.arrow_upward,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
                                   ),
                                 ),
                               ],
@@ -304,29 +360,37 @@ class _AiScreenState extends State<AiScreen> {
                     _buildOptionCard(
                       icon: Icons.edit,
                       title: 'Refine a\nBio',
-                      onTap: () {
-                        _sendMessage(
-                          'Write a professional bio for my content creator lifestyle brand',
-                        );
-                      },
+                      onTap: _isSending
+                          ? null
+                          : () {
+                              _sendMessage(
+                                'Write a professional bio for my content creator lifestyle brand',
+                              );
+                            },
                     ),
                     const SizedBox(width: 16),
                     _buildOptionCard(
                       icon: Icons.auto_awesome,
                       title: 'Generate\nCaption',
-                      onTap: () {
-                        _sendMessage(
-                          'Generate an engaging caption for my lifestyle content',
-                        );
-                      },
+                      onTap: _isSending
+                          ? null
+                          : () {
+                              _sendMessage(
+                                'Generate an engaging caption for my lifestyle content',
+                              );
+                            },
                     ),
                     const SizedBox(width: 16),
                     _buildOptionCard(
                       icon: Icons.insert_drive_file,
                       title: 'Draft a\nScript',
-                      onTap: () {
-                        _sendMessage('Draft a video script for my channel');
-                      },
+                      onTap: _isSending
+                          ? null
+                          : () {
+                              _sendMessage(
+                                'Draft a video script for my channel',
+                              );
+                            },
                     ),
                   ],
                 ),
@@ -351,7 +415,7 @@ class _AiScreenState extends State<AiScreen> {
             _buildUserBubble(message.userText),
             const SizedBox(height: 8),
 
-            _buildAiResponseCard(message.aiResponse),
+            _buildAiResponseCard(message),
             const SizedBox(height: 24),
           ],
         );
@@ -383,7 +447,8 @@ class _AiScreenState extends State<AiScreen> {
     );
   }
 
-  Widget _buildAiResponseCard(String aiText) {
+  Widget _buildAiResponseCard(ChatMessage message) {
+    final aiText = message.aiResponse;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,133 +469,62 @@ class _AiScreenState extends State<AiScreen> {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0xFFE9DDFE), width: 1.5),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Here's a professional bio for your content creator lifestyle brand:",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF222222),
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                "Content Creator | Lifestyle Enthusiast | Storyteller",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF111111),
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "I create engaging content that inspires, entertains, and connects.From lifestyle tips to behind-the-scenes moments, I share real Instagram Caption experiences to build a positive and creative community.",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF333333),
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text.rich(
-                TextSpan(
+          child: aiText == null && message.error == null
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : message.error != null
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextSpan(
-                      text:
-                          "Let's collaborate and create something amazing together. ",
-                      style: TextStyle(
+                    Text(
+                      message.error!,
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _isSending
+                          ? null
+                          : () {
+                              setState(() => _messages.remove(message));
+                              _sendMessage(message.userText);
+                            },
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SelectableText(
+                      aiText!,
+                      style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13.5,
                         fontWeight: FontWeight.w400,
                         color: Color(0xFF222222),
-                        height: 1.35,
+                        height: 1.4,
                       ),
                     ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Icon(
-                        Icons.auto_awesome_outlined,
-                        color: Color(0xFF9E8EFE),
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
+                    const SizedBox(height: 18),
                     _buildActionButton(
                       icon: Icons.copy_outlined,
                       label: 'Copy',
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: aiText));
+                        Clipboard.setData(ClipboardData(text: aiText!));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
-                              'Bio copied to clipboard!',
-                              style: TextStyle(fontFamily: 'Poppins'),
-                            ),
-                            duration: Duration(seconds: 2),
-                            backgroundColor: Color(0xFF9E8EFE),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _buildActionButton(
-                      icon: Icons.refresh_rounded,
-                      label: 'Regenerate',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Regenerating bio...',
-                              style: TextStyle(fontFamily: 'Poppins'),
-                            ),
-                            duration: Duration(seconds: 1),
-                            backgroundColor: Color(0xFF9E8EFE),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _buildActionButton(
-                      icon: Icons.share_outlined,
-                      label: 'Share',
-                      onTap: () {
-                        Clipboard.setData(ClipboardData(text: aiText));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Bio copied to share!',
-                              style: TextStyle(fontFamily: 'Poppins'),
-                            ),
-                            duration: Duration(seconds: 2),
-                            backgroundColor: Color(0xFF9E8EFE),
-                            behavior: SnackBarBehavior.floating,
+                            content: Text('Reply copied to clipboard!'),
                           ),
                         );
                       },
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -539,7 +533,7 @@ class _AiScreenState extends State<AiScreen> {
   Widget _buildActionButton({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -572,7 +566,7 @@ class _AiScreenState extends State<AiScreen> {
   Widget _buildOptionCard({
     required IconData icon,
     required String title,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return Expanded(
       child: GestureDetector(
@@ -585,7 +579,7 @@ class _AiScreenState extends State<AiScreen> {
             border: Border.all(color: const Color(0xFFEBE8FC), width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -626,7 +620,7 @@ class _AiScreenState extends State<AiScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9E8EFE).withOpacity(0.4),
+              color: const Color(0xFF9E8EFE).withValues(alpha: 0.4),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -682,7 +676,7 @@ class _AiScreenState extends State<AiScreen> {
             ),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Get.to(() => const ProfileScreen1()),
+              onTap: RoleNavigation.openCurrentProfile,
               child: _buildNavIcon(
                 'assets/images/person_icon.png',
                 isActive: _selectedTabIndex == 4,
@@ -755,7 +749,9 @@ class _AiScreenState extends State<AiScreen> {
                   Navigator.pop(context);
                   setState(() {
                     _messages.clear();
+                    _chatId = null;
                   });
+                  AiApi.clearLastChat();
                 },
                 child: Row(
                   children: const [
@@ -775,62 +771,34 @@ class _AiScreenState extends State<AiScreen> {
               ),
               const SizedBox(height: 40),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    'Recent Chats',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Text(
-                    'View all',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFB18CFF),
-                    ),
-                  ),
-                ],
+              const Text(
+                'Current Chat',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
               const SizedBox(height: 16),
 
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.zero,
-                  children: [
-                    _buildRecentChatItem(
-                      title: 'Write a bio for my brand',
-                      time: '2 min ago',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _sendMessage(
-                          'Write a professional bio for my content creator lifestyle brand',
-                        );
-                      },
-                    ),
-                    _buildRecentChatItem(
-                      title: 'Hook ideas for Instagram',
-                      time: '10 min ago',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _sendMessage('Hook ideas for Instagram');
-                      },
-                    ),
-                    _buildRecentChatItem(
-                      title: 'Script for Youtube',
-                      time: 'yesterday',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _sendMessage('Script for Youtube');
-                      },
-                    ),
-                  ],
+                  children: _messages.isEmpty
+                      ? const [
+                          Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Text('No saved chat yet.'),
+                          ),
+                        ]
+                      : [
+                          _buildRecentChatItem(
+                            title: _messages.first.userText,
+                            time: '${_messages.length} messages',
+                            onTap: () => Navigator.pop(context),
+                          ),
+                        ],
                 ),
               ),
             ],

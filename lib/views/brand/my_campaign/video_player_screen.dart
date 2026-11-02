@@ -8,6 +8,7 @@ class VideoPlayerScreen extends StatefulWidget {
   final String duration;
   final Widget previewWidget;
   final String? videoAssetPath;
+  final String? videoUrl;
 
   const VideoPlayerScreen({
     super.key,
@@ -15,6 +16,7 @@ class VideoPlayerScreen extends StatefulWidget {
     required this.duration,
     required this.previewWidget,
     this.videoAssetPath,
+    this.videoUrl,
   });
 
   @override
@@ -31,22 +33,31 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   VideoPlayerController? _videoController;
   bool _isControllerInitialized = false;
+  bool _videoFailed = false;
 
   @override
   void initState() {
     super.initState();
     _parseTotalSeconds();
 
-    if (widget.videoAssetPath != null) {
-      _videoController = VideoPlayerController.asset(widget.videoAssetPath!)
-        ..initialize().then((_) {
-          setState(() {
-            _isControllerInitialized = true;
-          });
-          if (_isPlaying) {
-            _videoController?.play();
-          }
-        })
+    if (widget.videoAssetPath != null || widget.videoUrl != null) {
+      _videoController = widget.videoUrl != null
+          ? VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!))
+          : VideoPlayerController.asset(widget.videoAssetPath!);
+      _videoController!
+        ..initialize()
+            .then((_) {
+              if (!mounted) return;
+              setState(() {
+                _isControllerInitialized = true;
+              });
+              if (_isPlaying) {
+                _videoController?.play();
+              }
+            })
+            .catchError((_) {
+              if (mounted) setState(() => _videoFailed = true);
+            })
         ..setLooping(true);
 
       _videoController?.addListener(_onVideoControllerUpdate);
@@ -148,7 +159,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           child: SizedBox(
                             width: 360,
                             height: 640,
-                            child: (widget.videoAssetPath != null)
+                            child:
+                                (widget.videoAssetPath != null ||
+                                    widget.videoUrl != null)
                                 ? (_isControllerInitialized
                                       ? AspectRatio(
                                           aspectRatio: _videoController!
@@ -156,7 +169,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                               .aspectRatio,
                                           child: VideoPlayer(_videoController!),
                                         )
-                                      : Container(color: Colors.black))
+                                      : Container(
+                                          color: Colors.black,
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            _videoFailed
+                                                ? 'Video could not be loaded.'
+                                                : 'Loading video...',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ))
                                 : Image.asset(
                                     'assets/images/reel_mockup.png',
                                     fit: BoxFit.cover,

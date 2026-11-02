@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../services/home_api.dart';
 import 'go_live_screen.dart';
 
 class CreateAutomationScreen extends StatefulWidget {
@@ -16,7 +17,11 @@ class CreateAutomationScreen extends StatefulWidget {
 class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
   int _currentStep = 1;
   bool _allPostReel = false;
-  int _selectedPostIndex = 1;
+  int _selectedPostIndex = 0;
+  List<Map<String, dynamic>> _instagramMedia = const [];
+  Map<String, dynamic> _instagramProfile = const {};
+  bool _isLoadingInstagramMedia = true;
+  String? _instagramMediaError;
   final TextEditingController _nameController = TextEditingController();
 
   bool _anyComment = false;
@@ -47,6 +52,55 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
     text:
         "It looks like the profile hasn't been followed yet 🙃\nFollow the account first to unlock your access 🚀",
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstagramMedia();
+    _loadInstagramProfile();
+  }
+
+  Future<void> _loadInstagramProfile() async {
+    try {
+      final data = await HomeApi.creatorInstagramProfile();
+      final profile = data['profile'];
+      if (!mounted || profile is! Map) return;
+      setState(() => _instagramProfile = Map<String, dynamic>.from(profile));
+    } catch (_) {
+      // The selected-media preview remains usable when profile details fail.
+    }
+  }
+
+  Future<void> _loadInstagramMedia() async {
+    setState(() {
+      _isLoadingInstagramMedia = true;
+      _instagramMediaError = null;
+    });
+    try {
+      final media = await HomeApi.creatorInstagramMedia();
+      final selectableMedia = media.where((item) {
+        final type = item['media_type']?.toString().toUpperCase() ?? '';
+        return type == 'IMAGE' ||
+            type == 'VIDEO' ||
+            type == 'REELS' ||
+            type == 'CAROUSEL_ALBUM';
+      }).toList();
+      if (!mounted) return;
+      setState(() {
+        _instagramMedia = selectableMedia;
+        if (_selectedPostIndex == 0 && selectableMedia.isNotEmpty) {
+          _selectedPostIndex = 1;
+        }
+        _isLoadingInstagramMedia = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _instagramMediaError = error.toString();
+        _isLoadingInstagramMedia = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -453,50 +507,9 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                 borderRadius: BorderRadius.circular(26),
                 child: Stack(
                   children: [
-                    Positioned.fill(
-                      child: Image.asset(
-                        _selectedPostIndex == 2
-                            ? 'assets/images/animate_girl.png'
-                            : 'assets/images/girl_image.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    Positioned.fill(child: _buildSelectedMediaPreview()),
 
-                    Positioned(
-                      top: 6,
-                      left: 10,
-                      right: 10,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            '10:20',
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.signal_cellular_4_bar,
-                                size: 8,
-                                color: Colors.white,
-                              ),
-                              SizedBox(width: 2),
-                              Icon(Icons.wifi, size: 8, color: Colors.white),
-                              SizedBox(width: 2),
-                              Icon(
-                                Icons.battery_full,
-                                size: 8,
-                                color: Colors.white,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                    Positioned(top: 8, left: 10, child: _buildMediaTypeLabel()),
 
                     Positioned(
                       left: 0,
@@ -520,124 +533,14 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                     Positioned(
                       right: 6,
                       bottom: 12,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.favorite_border,
-                            color: Colors.white,
-                            size: 15,
-                          ),
-                          const SizedBox(height: 1),
-                          const Text(
-                            '6,323',
-                            style: TextStyle(
-                              fontSize: 7.5,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 2),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Icon(
-                            Icons.chat_bubble_outline,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                          const SizedBox(height: 1),
-                          const Text(
-                            '10',
-                            style: TextStyle(
-                              fontSize: 7.5,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 2),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Transform.rotate(
-                            angle: -0.2,
-                            child: const Icon(
-                              Icons.send_outlined,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          const Text(
-                            '78',
-                            style: TextStyle(
-                              fontSize: 7.5,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 2),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: _buildMediaMetrics(),
                     ),
 
                     Positioned(
                       left: 8,
                       bottom: 10,
                       right: 40,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 18,
-                            height: 18,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: AssetImage(
-                                  'assets/images/user_avatar.png',
-                                ),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Riya',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 2),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 0.8,
-                              ),
-                            ),
-                            child: const Text(
-                              'Follow',
-                              style: TextStyle(
-                                fontSize: 7.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: _buildMediaAccount(),
                     ),
                   ],
                 ),
@@ -699,112 +602,62 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
         ),
         const SizedBox(height: 14),
 
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedPostIndex = 0),
-                child: _buildPostCard(
-                  index: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Stack(
-                      children: [
-                        const Center(
-                          child: Text(
-                            'Next Post\nor Reel',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: _buildRadioIcon(_selectedPostIndex == 0),
-                        ),
-                      ],
+        if (_isLoadingInstagramMedia)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_instagramMedia.isNotEmpty)
+          SizedBox(
+            height: 140,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _instagramMedia.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
+              itemBuilder: (context, index) => SizedBox(
+                width: 94,
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedPostIndex = index + 1),
+                  child: _buildPostCard(
+                    index: index + 1,
+                    child: _buildInstagramMediaTile(
+                      _instagramMedia[index],
+                      index + 1,
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedPostIndex = 1),
-                child: _buildPostCard(
-                  index: 1,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
-                            'assets/images/girl_image.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: _buildRadioIcon(_selectedPostIndex == 1),
-                      ),
-                    ],
-                  ),
-                ),
+          )
+        else ...[
+          if (_instagramMediaError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                'Instagram media could not be loaded. Please try again.',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ),
-            const SizedBox(width: 10),
-
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedPostIndex = 2),
-                child: _buildPostCard(
-                  index: 2,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
-                            'assets/images/animate_girl.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.black45,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Icon(
-                            Icons.slideshow,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          Center(
+            child: Column(
+              children: [
+                const Text(
+                  'No posts or reels are available from this Instagram account.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-              ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: _loadInstagramMedia,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Refresh'),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
         const SizedBox(height: 20),
 
         Row(
@@ -2080,10 +1933,31 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
         Expanded(
           child: GestureDetector(
             onTap: () {
+              if (_currentStep == 1 &&
+                  !_allPostReel &&
+                  _selectedPostIndex == 0) {
+                Get.snackbar(
+                  'Select a post or reel',
+                  'Choose an Instagram post or reel before continuing.',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
               if (_currentStep < 3) {
                 setState(() => _currentStep++);
               } else {
-                Get.to(() => GoLiveScreen(selectedImage: _selectedStep3Image));
+                Get.to(
+                  () => GoLiveScreen(
+                    selectedImage: _selectedStep3Image,
+                    selectedMedia:
+                        _selectedPostIndex > 0 &&
+                            _selectedPostIndex <= _instagramMedia.length
+                        ? _instagramMedia[_selectedPostIndex - 1]
+                        : null,
+                    instagramProfile: _instagramProfile,
+                    automationTitle: 'Comment Automation',
+                  ),
+                );
               }
             },
             behavior: HitTestBehavior.opaque,
@@ -2104,9 +1978,9 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Next',
+                  _currentStep == 3 ? 'Create Automation' : 'Next',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 15,
@@ -2186,6 +2060,187 @@ class _CreateAutomationScreenState extends State<CreateAutomationScreen> {
         ),
       ),
       child: child,
+    );
+  }
+
+  Map<String, dynamic>? get _selectedMedia {
+    final index = _selectedPostIndex - 1;
+    if (index < 0 || index >= _instagramMedia.length) return null;
+    return _instagramMedia[index];
+  }
+
+  Widget _buildMediaTypeLabel() {
+    final type = _selectedMedia?['media_type']?.toString().toUpperCase();
+    if (type == null || type.isEmpty) return const SizedBox.shrink();
+    final label = type == 'VIDEO' || type == 'REELS' ? 'REEL' : 'POST';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaMetrics() {
+    final media = _selectedMedia;
+    if (media == null) return const SizedBox.shrink();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildMediaMetric(Icons.favorite_border, media['likes']),
+        const SizedBox(height: 8),
+        _buildMediaMetric(Icons.chat_bubble_outline, media['comments']),
+      ],
+    );
+  }
+
+  Widget _buildMediaMetric(IconData icon, Object? value) {
+    final display = value?.toString();
+    if (display == null || display.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 15),
+        const SizedBox(height: 1),
+        Text(
+          display,
+          style: const TextStyle(
+            fontSize: 7.5,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMediaAccount() {
+    final username = _instagramProfile['username']?.toString().trim();
+    if (username == null || username.isEmpty) return const SizedBox.shrink();
+    final avatarUrl = HomeApi.mediaUrl(
+      _instagramProfile['profile_picture_url'],
+    );
+    return Row(
+      children: [
+        ClipOval(
+          child: avatarUrl == null
+              ? Container(
+                  width: 18,
+                  height: 18,
+                  color: const Color(0xFF6B4EFF),
+                  child: const Icon(
+                    Icons.person,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                )
+              : Image.network(
+                  avatarUrl,
+                  width: 18,
+                  height: 18,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 18,
+                    height: 18,
+                    color: const Color(0xFF6B4EFF),
+                    child: const Icon(
+                      Icons.person,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            username,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedMediaPreview() {
+    final media = _selectedMedia;
+    if (media == null) {
+      return const ColoredBox(
+        color: Colors.black,
+        child: Center(
+          child: Text(
+            'Select a post\nor reel below',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ),
+      );
+    }
+
+    final imageUrl = HomeApi.mediaUrl(
+      media['thumbnail_url'] ?? media['thumbnail'] ?? media['media_url'],
+    );
+    if (imageUrl == null) {
+      return const ColoredBox(color: Colors.black);
+    }
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          const ColoredBox(color: Colors.black),
+    );
+  }
+
+  Widget _buildInstagramMediaTile(Map<String, dynamic> media, int index) {
+    final imageUrl = HomeApi.mediaUrl(
+      media['thumbnail_url'] ?? media['thumbnail'] ?? media['media_url'],
+    );
+    final type = media['media_type']?.toString().toLowerCase() ?? '';
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (imageUrl != null)
+            Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const ColoredBox(color: Colors.black),
+            )
+          else
+            const ColoredBox(color: Colors.black),
+          if (type.contains('video') || type.contains('reel'))
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: _buildRadioIcon(_selectedPostIndex == index),
+          ),
+        ],
+      ),
     );
   }
 

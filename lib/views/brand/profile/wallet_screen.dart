@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/auth_api.dart';
+import '../../../services/wallet_api.dart';
 import '../../../widgets/custom_button.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -11,6 +13,31 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  String _balance = '—';
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWallet();
+  }
+
+  Future<void> _loadWallet() async {
+    try {
+      final data = await WalletApi.brandWallet();
+      final wallet = data['wallet'];
+      if (!mounted) return;
+      setState(() {
+        _balance = wallet is Map
+            ? wallet['balance']?.toString() ?? '0.00'
+            : '0.00';
+        _error = null;
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -101,15 +128,22 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
-                            '₹200.45',
-                            style: TextStyle(
+                          Text(
+                            '₹$_balance',
+                            style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 32,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),
+                          if (_error != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _error!,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
                           const SizedBox(height: 20),
 
                           Material(

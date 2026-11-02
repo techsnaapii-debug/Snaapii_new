@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/auth_api.dart';
+import '../../shared/change_password_screen.dart';
+import '../my_campaign/onboarding_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -66,6 +69,17 @@ class _AccountScreenState extends State<AccountScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Column(
                       children: [
+                        _buildAccountCard(
+                          title: 'Change Password',
+                          leadingWidget: const Icon(
+                            Icons.lock_outline_rounded,
+                            size: 26,
+                            color: Colors.black87,
+                          ),
+                          onTap: () =>
+                              Get.to(() => const ChangePasswordScreen()),
+                        ),
+                        const SizedBox(height: 14),
                         _buildAccountCard(
                           title: 'Delete Account',
                           leadingWidget: Image.asset(
@@ -221,8 +235,18 @@ class _AccountScreenState extends State<AccountScreen> {
                       child: SizedBox(
                         height: 42,
                         child: OutlinedButton(
-                          onPressed: () {
-                            Get.back();
+                          onPressed: () async {
+                            try {
+                              await AuthApi.deleteCurrentAccount();
+                              if (!dialogContext.mounted) return;
+                              Navigator.of(dialogContext).pop();
+                              Get.offAll(() => const OnboardingScreen());
+                            } on ApiException catch (error) {
+                              if (!dialogContext.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(error.message)),
+                              );
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -322,8 +346,22 @@ class _AccountScreenState extends State<AccountScreen> {
                       child: SizedBox(
                         height: 42,
                         child: OutlinedButton(
-                          onPressed: () {
-                            Get.back();
+                          onPressed: () async {
+                            try {
+                              await AuthApi.disconnectInstagram();
+                              if (!dialogContext.mounted) return;
+                              Navigator.of(dialogContext).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Instagram disconnected.'),
+                                ),
+                              );
+                            } on ApiException catch (error) {
+                              if (!dialogContext.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(error.message)),
+                              );
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,

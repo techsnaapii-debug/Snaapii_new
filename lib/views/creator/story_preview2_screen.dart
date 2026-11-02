@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'automation_dashboard_screen.dart';
+import 'creator_home_screen.dart';
 
 class StoryPreview2Screen extends StatefulWidget {
   final String? storyImage;
@@ -662,11 +662,11 @@ class _StoryPreview2ScreenState extends State<StoryPreview2Screen> {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: GestureDetector(
                       onTap: () {
-                        Get.to(
-                          () => const AutomationDashboardScreen(
-                            automationType: 'story',
-                            isDm: false,
-                          ),
+                        Get.offAll(() => const CreatorHomeScreen());
+                        Get.snackbar(
+                          'Automation created',
+                          'Your story automation is ready to go live.',
+                          snackPosition: SnackPosition.BOTTOM,
                         );
                       },
                       behavior: HitTestBehavior.opaque,

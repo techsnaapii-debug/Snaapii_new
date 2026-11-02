@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../shared/role_navigation.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../services/instagram_access_gate.dart';
 import 'home_screen.dart';
 import 'basic_details_screen.dart';
 import '../ai/ai_screen.dart';
 import '../chat/chat_screen.dart';
-import '../profile/profile_screen_1.dart';
 import '../../creator/explore_screen.dart';
 
 class MyCampaignScreen extends StatefulWidget {
@@ -120,8 +121,12 @@ class _MyCampaignScreenState extends State<MyCampaignScreen> {
                                   text: 'Create Campaign',
                                   width: 263.0,
                                   isGradient: true,
-                                  onTap: () {
-                                    Get.to(() => const BasicDetailsScreen());
+                                  onTap: () async {
+                                    if (await InstagramAccessGate.requireConnection(
+                                      'Create Campaign',
+                                    )) {
+                                      Get.to(() => const BasicDetailsScreen());
+                                    }
                                   },
                                 ),
                               ),
@@ -185,7 +190,7 @@ class _MyCampaignScreenState extends State<MyCampaignScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9E8EFE).withOpacity(0.4),
+              color: const Color(0xFF9E8EFE).withValues(alpha: 0.4),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -243,7 +248,7 @@ class _MyCampaignScreenState extends State<MyCampaignScreen> {
             ),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Get.to(() => const ProfileScreen1()),
+              onTap: RoleNavigation.openCurrentProfile,
               child: _buildNavIcon(
                 'assets/images/person_icon.png',
                 isActive: _selectedTabIndex == 4,

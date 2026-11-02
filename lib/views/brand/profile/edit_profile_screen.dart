@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../services/profile_api.dart';
+import '../../../services/auth_api.dart';
 import '../../../widgets/custom_button.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -12,33 +14,78 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _businessNameController = TextEditingController();
-  final TextEditingController _businessCategoryController =
-      TextEditingController();
-  final TextEditingController _foundedController = TextEditingController();
-  final TextEditingController _bioController = TextEditingController();
-  final TextEditingController _websiteController = TextEditingController();
-  final TextEditingController _officeLocationController =
-      TextEditingController();
-  final TextEditingController _gstinController = TextEditingController();
-  final TextEditingController _panController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _postalCodeController = TextEditingController();
-  final TextEditingController _businessDetailsController =
-      TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final user = await ProfileApi.brandProfile();
+      if (!mounted) return;
+      setState(() {
+        _businessNameController.text =
+            user['name']?.toString().isNotEmpty == true
+            ? user['name'].toString()
+            : [user['first_name'], user['last_name']]
+                  .where((part) => part != null && part.toString().isNotEmpty)
+                  .join(' ');
+        _emailController.text = user['email']?.toString() ?? '';
+        _phoneController.text = user['mobile_number']?.toString() ?? '';
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _save() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      await ProfileApi.updateBasic(
+        expectedRole: 3,
+        name: _businessNameController.text,
+        email: _emailController.text,
+        phone: _phoneController.text,
+      );
+      if (mounted) Get.back(result: true);
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update profile. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   void dispose() {
     _businessNameController.dispose();
-    _businessCategoryController.dispose();
-    _foundedController.dispose();
-    _bioController.dispose();
-    _websiteController.dispose();
-    _officeLocationController.dispose();
-    _gstinController.dispose();
-    _panController.dispose();
-    _addressController.dispose();
-    _postalCodeController.dispose();
-    _businessDetailsController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -155,65 +202,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             controller: _businessNameController,
                           ),
                           _buildInputField(
-                            'Business Category',
-                            controller: _businessCategoryController,
+                            'Email',
+                            controller: _emailController,
                           ),
                           _buildInputField(
-                            'Founded',
-                            controller: _foundedController,
-                          ),
-                          _buildInputField('Bio', controller: _bioController),
-                          _buildInputField(
-                            'Website',
-                            controller: _websiteController,
-                          ),
-                          _buildInputField(
-                            'Office Location',
-                            controller: _officeLocationController,
+                            'Phone Number',
+                            controller: _phoneController,
                           ),
 
-                          const SizedBox(height: 12),
-
-                          const Text(
-                            'Business Details',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                          if (_isLoading)
+                            const Center(child: CircularProgressIndicator()),
+                          if (_error != null)
+                            Text(
+                              _error!,
+                              style: const TextStyle(color: Colors.red),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          _buildInputField(
-                            '',
-                            controller: _businessDetailsController,
-                            maxLines: 4,
-                          ),
-
-                          _buildInputField(
-                            'GSTIN',
-                            controller: _gstinController,
-                          ),
-                          _buildInputField('PAN', controller: _panController),
-                          _buildInputField(
-                            'Address Details',
-                            controller: _addressController,
-                            maxLines: 4,
-                          ),
-                          _buildInputField(
-                            'Postal Code',
-                            controller: _postalCodeController,
-                          ),
 
                           const SizedBox(height: 20),
 
                           CustomButton(
-                            text: 'Update',
+                            text: _isSaving ? 'Updating...' : 'Update',
                             isGradient: true,
                             width: double.infinity,
                             onTap: () {
-                              Get.back();
+                              if (!_isLoading && !_isSaving && _error == null) {
+                                _save();
+                              }
                             },
                           ),
 

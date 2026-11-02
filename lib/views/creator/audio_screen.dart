@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../services/auth_api.dart';
+import '../../services/home_api.dart';
 
 class AudioScreen extends StatefulWidget {
   const AudioScreen({super.key});
@@ -11,58 +15,46 @@ class AudioScreen extends StatefulWidget {
 
 class _AudioScreenState extends State<AudioScreen> {
   final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _audioList = const [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  final List<Map<String, String>> _audioList = [
-    {
-      'title': 'Gleech Music',
-      'artist': '(Shreya Ghoshal)',
-      'image': 'assets/images/banner_2.jpg',
-      'duration': '1:03',
-      'videoPath': 'assets/images/dvideo_1.mp4',
-    },
-    {
-      'title': 'Music',
-      'artist': '(Arijit Singh)',
-      'image': 'assets/images/banner_3.jpg',
-      'duration': '0:20',
-      'videoPath': '',
-    },
-    {
-      'title': 'Gleech Music',
-      'artist': '(Shreya Ghoshal)',
-      'image': 'assets/images/banner_2.jpg',
-      'duration': '1:03',
-      'videoPath': 'assets/images/dvideo_1.mp4',
-    },
-    {
-      'title': 'Gleech Music',
-      'artist': '(Shreya Ghoshal)',
-      'image': 'assets/images/user_avatar.png',
-      'duration': '0:45',
-      'videoPath': '',
-    },
-    {
-      'title': 'Music',
-      'artist': '(Arijit Singh)',
-      'image': 'assets/images/banner_2.jpg',
-      'duration': '1:03',
-      'videoPath': 'assets/images/dvideo_1.mp4',
-    },
-    {
-      'title': 'Gleech Music',
-      'artist': '(Shreya Ghoshal)',
-      'image': 'assets/images/banner_3.jpg',
-      'duration': '0:20',
-      'videoPath': '',
-    },
-    {
-      'title': 'Gleech Music',
-      'artist': '(Shreya Ghoshal)',
-      'image': 'assets/images/banner_2.jpg',
-      'duration': '1:03',
-      'videoPath': 'assets/images/dvideo_1.mp4',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadAudios();
+  }
+
+  Future<void> _loadAudios() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final audios = await HomeApi.trendingAudios();
+      if (!mounted) return;
+      setState(() {
+        _audioList = audios;
+        _isLoading = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.message;
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredAudios {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _audioList;
+    return _audioList.where((audio) {
+      final song = audio['song_name']?.toString().toLowerCase() ?? '';
+      final singer = audio['singer_name']?.toString().toLowerCase() ?? '';
+      return song.contains(query) || singer.contains(query);
+    }).toList();
+  }
 
   @override
   void dispose() {
@@ -88,18 +80,15 @@ class _AudioScreenState extends State<AudioScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 8),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 6.0,
+                      horizontal: 16,
+                      vertical: 6,
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         GestureDetector(
-                          onTap: () => Get.back(),
-                          behavior: HitTestBehavior.opaque,
+                          onTap: Get.back,
                           child: const Icon(
                             Icons.arrow_back_ios_new,
                             color: Color(0xFF6B4EFF),
@@ -109,11 +98,9 @@ class _AudioScreenState extends State<AudioScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
@@ -136,10 +123,10 @@ class _AudioScreenState extends State<AudioScreen> {
                           Expanded(
                             child: TextField(
                               controller: _searchController,
+                              onChanged: (_) => setState(() {}),
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 14,
-                                color: Colors.black,
                               ),
                               decoration: const InputDecoration(
                                 hintText: 'Search',
@@ -158,13 +145,11 @@ class _AudioScreenState extends State<AudioScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -187,28 +172,8 @@ class _AudioScreenState extends State<AudioScreen> {
                               height: 1.3,
                             ),
                           ),
-
                           const SizedBox(height: 16),
-
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7F7FD),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _audioList.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final item = _audioList[index];
-                                return _buildAudioCardItem(item);
-                              },
-                            ),
-                          ),
-
+                          _buildAudioList(),
                           const SizedBox(height: 30),
                         ],
                       ),
@@ -223,33 +188,97 @@ class _AudioScreenState extends State<AudioScreen> {
     );
   }
 
-  Widget _buildAudioCardItem(Map<String, String> item) {
+  Widget _buildAudioList() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(28),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          children: [
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 12),
+            ),
+            TextButton.icon(
+              onPressed: _loadAudios,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
+      );
+    }
+    final audios = _filteredAudios;
+    if (audios.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(
+          child: Text(
+            'No trending audio found.',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+          ),
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7FD),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: audios.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _buildAudioCardItem(audios[index]),
+      ),
+    );
+  }
+
+  Widget _buildAudioCardItem(Map<String, dynamic> item) {
+    final imageUrl = HomeApi.mediaUrl(item['cover_image_url']);
+    final audioUrl = Uri.tryParse(
+      item['instagram_audio_url']?.toString() ?? '',
+    );
+    final title = item['song_name']?.toString().trim();
+    final artist = item['singer_name']?.toString().trim();
+
+    Future<void> openInstagram() async {
+      if (audioUrl == null ||
+          !await launchUrl(audioUrl, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          Get.snackbar(
+            'Unable to open Instagram',
+            'The audio link is not available.',
+          );
+        }
+      }
+    }
+
     return Row(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.asset(
-            item['image']!,
-            width: 52,
-            height: 52,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 52,
-                height: 52,
-                color: const Color(0xFF9E8EFE),
-                child: const Icon(
-                  Icons.music_note,
-                  color: Colors.white,
-                  size: 22,
+          child: imageUrl == null
+              ? _audioPlaceholder()
+              : Image.network(
+                  imageUrl,
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _audioPlaceholder(),
                 ),
-              );
-            },
-          ),
         ),
-
         const SizedBox(width: 10),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,14 +288,13 @@ class _AudioScreenState extends State<AudioScreen> {
                   const Text('🎵 ', style: TextStyle(fontSize: 11)),
                   Expanded(
                     child: Text(
-                      item['title']!,
+                      title?.isNotEmpty == true ? title! : 'Untitled audio',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
                       ),
                     ),
                   ),
@@ -274,7 +302,7 @@ class _AudioScreenState extends State<AudioScreen> {
               ),
               const SizedBox(height: 1),
               Text(
-                item['artist']!,
+                artist?.isNotEmpty == true ? artist! : 'Unknown artist',
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11.5,
@@ -283,46 +311,50 @@ class _AudioScreenState extends State<AudioScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0EAFF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'View on Instagram ',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF7A58FF),
+              GestureDetector(
+                onTap: audioUrl == null ? null : openInstagram,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0EAFF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'View on Instagram ',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF7A58FF),
+                        ),
                       ),
-                    ),
-                    Image.asset(
-                      'assets/images/instagram_icon.png',
-                      width: 11,
-                      height: 11,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.camera_alt,
-                        size: 11,
-                        color: Color(0xFF7A58FF),
+                      Image.asset(
+                        'assets/images/instagram_icon.png',
+                        width: 11,
+                        height: 11,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.camera_alt,
+                              size: 11,
+                              color: Color(0xFF7A58FF),
+                            ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
-
         const SizedBox(width: 8),
-
         GestureDetector(
-          onTap: () {},
+          onTap: audioUrl == null ? null : openInstagram,
           child: Container(
             width: 28,
             height: 28,
@@ -340,4 +372,11 @@ class _AudioScreenState extends State<AudioScreen> {
       ],
     );
   }
+
+  Widget _audioPlaceholder() => Container(
+    width: 52,
+    height: 52,
+    color: const Color(0xFF9E8EFE),
+    child: const Icon(Icons.music_note, color: Colors.white, size: 22),
+  );
 }

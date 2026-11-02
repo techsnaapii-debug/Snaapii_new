@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'account_added_screen.dart';
+import '../../services/wallet_api.dart';
+import '../../services/auth_api.dart';
 
 class AddUpiScreen extends StatefulWidget {
   const AddUpiScreen({super.key});
@@ -12,6 +14,29 @@ class AddUpiScreen extends StatefulWidget {
 
 class _AddUpiScreenState extends State<AddUpiScreen> {
   final TextEditingController _upiIdController = TextEditingController();
+  bool _isSaving = false;
+
+  Future<void> _save() async {
+    final upiId = _upiIdController.text.trim();
+    if (!upiId.contains('@')) {
+      _show('Enter a valid UPI ID.');
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await WalletApi.addUpiAccount(upiId);
+      if (mounted)
+        Get.off(() => const AccountAddedScreen(accountType: 'UPI ID'));
+    } on ApiException catch (error) {
+      if (mounted) _show(error.message);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _show(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 
   @override
   void dispose() {
@@ -129,13 +154,7 @@ class _AddUpiScreenState extends State<AddUpiScreen> {
 
                           Center(
                             child: GestureDetector(
-                              onTap: () {
-                                Get.to(
-                                  () => const AccountAddedScreen(
-                                    accountType: 'UPI ID',
-                                  ),
-                                );
-                              },
+                              onTap: _isSaving ? null : _save,
                               behavior: HitTestBehavior.opaque,
                               child: Container(
                                 width: double.infinity,
@@ -160,9 +179,9 @@ class _AddUpiScreenState extends State<AddUpiScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'Verify & Save',
+                                    _isSaving ? 'Saving...' : 'Verify & Save',
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 16,

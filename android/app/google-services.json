@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "740553268475",
+    "project_id": "snaapii-87151",
+    "storage_bucket": "snaapii-87151.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:740553268475:android:fdae90f92c7f52b5f0245e",
+        "android_client_info": {
+          "package_name": "com.snaapii.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2RQjh-DGNStRkvUoKFG1SNEZkiLMUwHk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

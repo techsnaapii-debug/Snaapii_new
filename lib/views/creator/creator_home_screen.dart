@@ -1,16 +1,25 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../services/home_api.dart';
+import '../../services/auth_api.dart';
+import '../../services/instagram_access_gate.dart';
+import '../../services/notification_api.dart';
+import '../../services/search_api.dart';
+import '../shared/home_media.dart';
 import '../brand/ai/ai_screen.dart';
 import '../brand/my_campaign/video_player_screen.dart';
 import 'creator_chat_screen.dart';
 import 'creator_profile_screen.dart';
 import 'explore_screen.dart';
+import 'campaign_details_screen.dart';
 import 'audio_screen.dart';
 import 'smart_auto_dm_screen.dart';
+import 'refer_earn_screen.dart';
 import 'wallet_screen.dart';
+import '../shared/notifications_screen.dart';
 
 class CreatorHomeScreen extends StatefulWidget {
   const CreatorHomeScreen({super.key});
@@ -21,35 +30,81 @@ class CreatorHomeScreen extends StatefulWidget {
 
 class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
   int _selectedTabIndex = 0;
-  int _currentBannerIndex = 0;
-  late final PageController _bannerPageController;
-  Timer? _bannerTimer;
+  List<Map<String, dynamic>> _banners = [];
+  List<Map<String, dynamic>> _videos = [];
+  List<Map<String, dynamic>> _campaigns = [];
+  List<Map<String, dynamic>> _trendingAudios = [];
+  String? _homeError;
+  String _search = '';
+  int _unreadNotifications = 0;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
-    _bannerPageController = PageController(initialPage: 300);
-    _currentBannerIndex = 0;
-    _startBannerAutoScroll();
+    _loadHome();
   }
 
-  void _startBannerAutoScroll() {
-    _bannerTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (_bannerPageController.hasClients) {
-        int nextPage = _bannerPageController.page!.round() + 1;
-        _bannerPageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOut,
-        );
+  Future<void> _loadHome() async {
+    final results = await Future.wait<Object>([
+      _loadListSafely(HomeApi.banners),
+      _loadListSafely(() => HomeApi.videos('creator')),
+      _loadListSafely(HomeApi.creatorCampaigns),
+      _loadListSafely(HomeApi.trendingAudios),
+      _loadUnreadCountSafely(),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _banners = results[0] as List<Map<String, dynamic>>;
+      _videos = results[1] as List<Map<String, dynamic>>;
+      _campaigns = results[2] as List<Map<String, dynamic>>;
+      _trendingAudios = results[3] as List<Map<String, dynamic>>;
+      _unreadNotifications = results[4] as int;
+      _homeError = null;
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _loadListSafely(
+    Future<List<Map<String, dynamic>>> Function() loader,
+  ) async {
+    try {
+      return await loader();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<int> _loadUnreadCountSafely() async {
+    try {
+      return await NotificationApi.unreadCount();
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  void _searchCampaigns(String value) {
+    final query = value.trim();
+    setState(() => _search = query.toLowerCase());
+    _searchDebounce?.cancel();
+    if (query.isEmpty) {
+      _loadHome();
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final campaigns = await SearchApi.campaigns(query);
+        if (mounted && _search == query.toLowerCase()) {
+          setState(() => _campaigns = campaigns);
+        }
+      } on ApiException catch (error) {
+        if (mounted) setState(() => _homeError = error.message);
       }
     });
   }
 
   @override
   void dispose() {
-    _bannerTimer?.cancel();
-    _bannerPageController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -72,49 +127,61 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
               child: Stack(
                 children: [
                   SafeArea(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
+                    child: RefreshIndicator(
+                      onRefresh: _loadHome,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 16),
 
-                          _buildTopBar(),
+                            _buildTopBar(),
 
-                          const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                          _buildSearchBar(),
+                            _buildSearchBar(),
 
-                          const SizedBox(height: 16),
+                            if (_homeError != null)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  _homeError!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
 
-                          _buildBannerSlider(),
+                            const SizedBox(height: 16),
 
-                          const SizedBox(height: 6),
+                            _buildBannerSlider(),
 
-                          _buildDotIndicators(),
+                            const SizedBox(height: 6),
 
-                          const SizedBox(height: 16),
+                            _buildDotIndicators(),
 
-                          _buildActionCategories(),
+                            const SizedBox(height: 16),
 
-                          const SizedBox(height: 24),
+                            _buildActionCategories(),
 
-                          _buildSuggestCampaignSection(),
+                            const SizedBox(height: 24),
 
-                          const SizedBox(height: 24),
+                            _buildSuggestCampaignSection(),
 
-                          _buildTrendingAudioSection(),
+                            const SizedBox(height: 24),
 
-                          const SizedBox(height: 24),
+                            _buildTrendingAudioSection(),
 
-                          _buildBrandInsights(),
+                            const SizedBox(height: 24),
 
-                          const SizedBox(height: 36),
+                            _buildBrandInsights(),
 
-                          _buildFooterBlock(),
+                            const SizedBox(height: 36),
 
-                          const SizedBox(height: 100),
-                        ],
+                            _buildFooterBlock(),
+
+                            const SizedBox(height: 100),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -146,7 +213,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
             child: ClipRect(
               child: Center(
                 child: MarqueeText(
-                  text: '@Kumar joined',
+                  text: 'SNAAPII',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
@@ -163,21 +230,22 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
               _buildTopIconCircle(
                 Icons.play_circle_outline,
                 onTap: () {
+                  if (_videos.isEmpty) return;
+                  final video = _videos.first;
+                  final url = HomeApi.mediaUrl(video['video_url']);
+                  if (url == null) return;
                   Get.to(
-                    () => const VideoPlayerScreen(
-                      title: 'Trending Video',
-                      duration: '1:03',
-                      previewWidget: SizedBox(),
-                      videoAssetPath: 'assets/images/dvideo_1.mp4',
+                    () => VideoPlayerScreen(
+                      title: video['title']?.toString() ?? 'Video',
+                      duration: '0:00',
+                      previewWidget: const SizedBox(),
+                      videoUrl: url,
                     ),
                   );
                 },
               ),
               const SizedBox(width: 8),
-              _buildTopIconCircle(
-                Icons.notifications_none_outlined,
-                onTap: () {},
-              ),
+              _notificationButton(),
               const SizedBox(width: 8),
               _buildTopIconCircle(
                 Icons.account_balance_wallet_outlined,
@@ -208,6 +276,37 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
     );
   }
 
+  Widget _notificationButton() => Stack(
+    clipBehavior: Clip.none,
+    children: [
+      _buildTopIconCircle(
+        Icons.notifications_none_outlined,
+        onTap: () async {
+          await Get.to(() => const NotificationsScreen());
+          if (mounted) _loadHome();
+        },
+      ),
+      if (_unreadNotifications > 0)
+        Positioned(
+          right: -2,
+          top: -2,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              _unreadNotifications > 9 ? '9+' : '$_unreadNotifications',
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+          ),
+        ),
+    ],
+  );
+
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -225,6 +324,7 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
+                onChanged: _searchCampaigns,
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 15,
@@ -249,85 +349,9 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
     );
   }
 
-  Widget _buildBannerSlider() {
-    final List<String> banners = [
-      'assets/images/login_banner.png',
-      'assets/images/banner_2.jpg',
-      'assets/images/banner_3.jpg',
-    ];
+  Widget _buildBannerSlider() => HomeBanners(banners: _banners);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        height: 180,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: PageView.builder(
-            controller: _bannerPageController,
-            itemCount: 9999,
-            allowImplicitScrolling: true,
-            onPageChanged: (index) {
-              setState(() {
-                _currentBannerIndex = index % banners.length;
-              });
-            },
-            itemBuilder: (context, index) {
-              final imageIndex = index % banners.length;
-              return Image.asset(
-                banners[imageIndex],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFFFFEBE3),
-                    child: const Center(
-                      child: Text(
-                        'Age of Sage Skincare Brand',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDotIndicators() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        3,
-        (index) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _currentBannerIndex == index
-                ? const Color(0xFF9E8EFE)
-                : const Color(0xFFEBE8FC),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildDotIndicators() => const SizedBox.shrink();
 
   Widget _buildActionCategories() {
     return Padding(
@@ -345,15 +369,19 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
           _buildActionItem(
             'assets/images/smart_dm_icon.png',
             'Smart Auto DM',
-            onTap: () {
-              Get.to(() => const SmartAutoDmScreen());
+            onTap: () async {
+              if (await InstagramAccessGate.requireConnection(
+                'Smart Auto DM',
+              )) {
+                Get.to(() => const SmartAutoDmScreen());
+              }
             },
           ),
           _buildActionItem(
             'assets/images/invite_earn_icon.png',
             'Invite & Earn',
             customPadding: const EdgeInsets.all(32),
-            onTap: () {},
+            onTap: () => Get.to(() => const ReferEarnScreen()),
           ),
         ],
       ),
@@ -409,517 +437,304 @@ class _CreatorHomeScreenState extends State<CreatorHomeScreen> {
   }
 
   Widget _buildSuggestCampaignSection() {
+    final matchingCampaigns = _campaigns
+        .where(
+          (campaign) =>
+              campaign['campaign_name']?.toString().toLowerCase().contains(
+                    _search,
+                  ) ==
+                  true ||
+              campaign['brand_name']?.toString().toLowerCase().contains(
+                    _search,
+                  ) ==
+                  true,
+        )
+        .take(3);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Suggest campaign',
+            'Suggested campaigns',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1E1A34),
             ),
           ),
           const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+          if (matchingCampaigns.isEmpty)
+            Container(
+              height: 100,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F8FF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                _search.isEmpty
+                    ? 'No approved campaigns available yet.'
+                    : 'No matching campaigns.',
+              ),
+            )
+          else
+            ...matchingCampaigns.map((campaign) {
+              final imageUrl = HomeApi.mediaUrl(campaign['campaign_image']);
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: const Color(0xFFDCD6CD),
-                    child: Image.asset(
-                      'assets/images/bancy.png',
-                      fit: BoxFit.cover,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => Get.to(
+                    () => CampaignDetailsScreen(
+                      brandName: campaign['brand_name']?.toString(),
+                      campaignId: int.tryParse(
+                        (campaign['campaign_id'] ?? campaign['id'] ?? '')
+                            .toString(),
+                      ),
+                      category: campaign['influencer_category']?.toString(),
+                      imagePath: imageUrl ?? '',
+                      followers: campaign['minimum_followers']?.toString(),
+                      reel: campaign['reels']?.toString(),
+                      story: campaign['stories']?.toString(),
+                      post: campaign['posts']?.toString(),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Gucci',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1A34),
-                      ),
-                    ),
-                    Row(
-                      children: const [
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (imageUrl != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              imageUrl,
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
                         Text(
-                          'Follower : ',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 15,
+                          campaign['campaign_name']?.toString() ?? 'Campaign',
+                          style: const TextStyle(
+                            fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E1A34),
                           ),
                         ),
-                        Icon(Icons.person, size: 23, color: Colors.black),
-                        SizedBox(width: 2),
+                        Text(campaign['brand_name']?.toString() ?? 'Brand'),
                         Text(
-                          '10K',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                          'Category: ${campaign['influencer_category'] ?? '—'}',
+                        ),
+                        Text(
+                          'Minimum followers: ${campaign['minimum_followers'] ?? '—'}',
+                        ),
+                        Text(
+                          'Budget per influencer: ₹${campaign['budget_per_influencer'] ?? '—'}',
+                        ),
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'View details',
+                            style: TextStyle(color: Color(0xFF7A58FF)),
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 6),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          color: Color(0xFF1E1A34),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Per Reel :  ₹ ',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          TextSpan(
-                            text: '1000',
-                            style: TextStyle(fontWeight: FontWeight.w400),
-                          ),
-                        ],
-                      ),
-                    ),
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          color: Color(0xFF1E1A34),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Category : ',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          TextSpan(
-                            text: 'Lifestyle',
-                            style: TextStyle(fontWeight: FontWeight.w400),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Read more',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF555555),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 60,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF7A58FF), Color(0xFF9E8EFE)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Text(
-                        'Apply',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+              );
+            }),
         ],
       ),
     );
   }
 
   Widget _buildTrendingAudioSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Instagram Trending Audio',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E1A34),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        SizedBox(
-          height: 200,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 250,
-                margin: const EdgeInsets.only(right: 14),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F7FD),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Get.to(() => const AudioScreen()),
-                      behavior: HitTestBehavior.opaque,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Expanded(
-                            child: Text(
-                              'Choose Trending Music to Boost Your Reels',
-                              maxLines: 2,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 11.3,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF555555),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 2),
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              size: 18,
-                              color: Color(0xFF9E8EFE),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildAudioItem('Gleech Music', '(Shreya Ghoshal)'),
-                    const SizedBox(height: 8),
-                    _buildAudioItem('Music', '(Arijit Singh)'),
-                    const SizedBox(height: 8),
-                    _buildAudioItem('Gleech Music', '(Shreya Ghoshal)'),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAudioItem(String title, String artist) {
-    return Row(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.asset(
-            'assets/images/user_avatar.png',
-            width: 36,
-            height: 36,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.music_note, size: 12, color: Colors.black),
-                const SizedBox(width: 2),
-                Text(
-                  title,
-                  style: const TextStyle(
+                const Text(
+                  'Instagram Trending Audio',
+                  style: TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 11,
+                    fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => Get.to(() => const AudioScreen()),
+                  icon: const Text(
+                    'View all',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Color(0xFF6B4EFF),
+                    ),
+                  ),
+                  label: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 13,
+                    color: Color(0xFF6B4EFF),
+                  ),
+                  iconAlignment: IconAlignment.end,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
               ],
             ),
-            Text(
-              artist,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF7A58FF),
+          ),
+          const SizedBox(height: 10),
+          if (_trendingAudios.isEmpty)
+            Container(
+              height: 100,
+              margin: const EdgeInsets.only(right: 16),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F6FF),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE6DFFF)),
+              ),
+              child: const Text(
+                'No trending audio available yet.',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Color(0xFF6B7280),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 164,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(right: 16),
+                itemCount: _trendingAudios.length > 4
+                    ? 4
+                    : _trendingAudios.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) =>
+                    _buildTrendingAudioCard(_trendingAudios[index]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendingAudioCard(Map<String, dynamic> audio) {
+    final coverUrl = HomeApi.mediaUrl(audio['cover_image_url']);
+    final song = audio['song_name']?.toString().trim();
+    final singer = audio['singer_name']?.toString().trim();
+    return GestureDetector(
+      onTap: () => Get.to(() => const AudioScreen()),
+      child: Container(
+        width: 172,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F6FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE6DFFF)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: coverUrl == null
+                    ? const ColoredBox(
+                        color: Color(0xFFE9E3FF),
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          color: Color(0xFF6B4EFF),
+                        ),
+                      )
+                    : Image.network(
+                        coverUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const ColoredBox(
+                              color: Color(0xFFE9E3FF),
+                              child: Icon(
+                                Icons.music_note_rounded,
+                                color: Color(0xFF6B4EFF),
+                              ),
+                            ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.music_note_rounded,
+                    size: 18,
+                    color: Color(0xFF1E1A34),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    song == null || song.isEmpty ? 'Trending audio' : song,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E1A34),
+                    ),
+                  ),
+                  if (singer != null && singer.isNotEmpty)
+                    Text(
+                      singer,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 10,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildBrandInsights() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Growth Tips',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9F8FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEBE8FC), width: 1.5),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Smart strategies to grow faster with creators',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: Color(0xFF9E8EFE), size: 20),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 180,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _buildInsightCard(
-                      title:
-                          'Smart strategy: Creative Sound design in video campaigns',
-                      videoAssetPath: 'assets/images/dvideo_1.mp4',
-                      child: Container(
-                        color: const Color(0xFFECE6D9),
-                        child: Center(
-                          child: Icon(
-                            Icons.music_note,
-                            color: Colors.black.withValues(alpha: 0.3),
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                      duration: '1:03',
-                    ),
-                    const SizedBox(width: 12),
-                    _buildInsightCard(
-                      title:
-                          'Brand Growth: Jazz Festival Live Concert Marketing',
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF565EFA), Color(0xFF26C6DA)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'jazz',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                'FESTIVAL',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 8,
-                                  letterSpacing: 2,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      duration: '0:20',
-                    ),
-                    const SizedBox(width: 12),
-                    _buildInsightCard(
-                      title:
-                          'Live Streaming Sessions: Organic reach strategies',
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFB18CFF), Color(0xFFE040FB)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: const Text(
-                            'MUSIC',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                      duration: '0:15',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInsightCard({
-    required String title,
-    required Widget child,
-    required String duration,
-    String? videoAssetPath,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Get.to(
-          () => VideoPlayerScreen(
-            title: title,
-            duration: duration,
-            previewWidget: child,
-            videoAssetPath: videoAssetPath,
-          ),
-        );
-      },
-      child: Container(
-        width: 120,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            children: [
-              Positioned.fill(child: child),
-              Positioned(
-                left: 8,
-                bottom: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 10,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        duration,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
+
+  Widget _buildBrandInsights() => HomeVideos(
+    heading: 'Growth Tips',
+    videos: _videos
+        .where(
+          (video) =>
+              video['title']?.toString().toLowerCase().contains(_search) ??
+              false,
+        )
+        .toList(),
+  );
 
   Widget _buildFooterBlock() {
     return Padding(

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../services/auth_api.dart';
 import '../../widgets/custom_button.dart';
+import '../../services/referral_api.dart';
 import 'how_work_screen.dart';
 
 class ReferEarnScreen extends StatefulWidget {
@@ -12,8 +14,83 @@ class ReferEarnScreen extends StatefulWidget {
 }
 
 class _ReferEarnScreenState extends State<ReferEarnScreen> {
-  final String _referralCode = 'SNAAPII1234';
-  final String _referralLink = 'https://snaapii.com/snaapii1234';
+  String? _referralCode;
+  String? _referralLink;
+  List<Map<String, dynamic>> _referrals = const [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReferrals();
+  }
+
+  Future<void> _loadReferrals() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      var referrals = await ReferralApi.getMyReferrals();
+      final existingCode = _findValue(referrals, const [
+        'referral_code',
+        'code',
+      ]);
+      final existingLink = _findValue(referrals, const [
+        'referral_link',
+        'link',
+      ]);
+
+      if (existingCode == null) {
+        final created = await ReferralApi.create();
+        final code = _valueFrom(created, const ['referral_code', 'code']);
+        final link = _valueFrom(created, const ['referral_link', 'link']);
+        if (code != null) {
+          _referralCode = code;
+          _referralLink = link;
+          referrals = await ReferralApi.getMyReferrals();
+        }
+      } else {
+        _referralCode = existingCode;
+        _referralLink = existingLink;
+      }
+
+      if (!mounted) return;
+      setState(() => _referrals = referrals);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String? _findValue(List<Map<String, dynamic>> records, List<String> keys) {
+    for (final record in records) {
+      final value = _valueFrom(record, keys);
+      if (value != null) return value;
+    }
+    return null;
+  }
+
+  String? _valueFrom(Map<String, dynamic> record, List<String> keys) {
+    for (final key in keys) {
+      final value = record[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  int get _pendingCount => _referrals.where((referral) {
+    final status = referral['status']?.toString().toLowerCase();
+    return status == 'pending';
+  }).length;
+
+  int get _successfulCount => _referrals.where((referral) {
+    final status = referral['status']?.toString().toLowerCase();
+    return status == 'successful' || status == 'completed' || status == 'used';
+  }).length;
 
   void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
@@ -147,230 +224,245 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        const Text(
-                          'Your Referral Code',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF616161),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 52,
-                          padding: const EdgeInsets.only(left: 16, right: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFE2D6FF),
-                              width: 1.2,
+                        if (_isLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else if (_error != null)
+                          _buildErrorCard(),
+
+                        if (!_isLoading && _referralCode != null) ...[
+                          const Text(
+                            'Your Referral Code',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF616161),
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              Text(
-                                _referralCode,
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const Spacer(),
-                              InkWell(
-                                onTap: () => _copyToClipboard(
-                                  _referralCode,
-                                  'Referral Code',
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 26,
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFF9E8EFE),
-                                        Color(0xFF6B4EFF),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    'Copy',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        const Text(
-                          'Your Referral Link',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF616161),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 52,
-                          padding: const EdgeInsets.only(left: 16, right: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFE2D6FF),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _referralLink,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: () => _copyToClipboard(
-                                  _referralLink,
-                                  'Referral Link',
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 26,
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFF9E8EFE),
-                                        Color(0xFF6B4EFF),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    'Copy',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        _buildOptionTile(
-                          icon: Icons.person_rounded,
-                          title: 'My Referrals',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 10),
-
-                        _buildOptionTile(
-                          icon: Icons.autorenew_rounded,
-                          title: 'Pending',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 10),
-
-                        _buildOptionTile(
-                          icon: Icons.check_circle_rounded,
-                          title: 'Successful',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 24),
-
-                        const Text(
-                          'How It Works',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: () => Get.to(() => const HowWorkScreen()),
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 7,
-                            ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 52,
+                            padding: const EdgeInsets.only(left: 16, right: 6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF7F3FF),
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFE2D6FF),
+                                width: 1.2,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                SizedBox(
-                                  width: 68,
-                                  height: 68,
-                                  child: Image.asset(
-                                    'assets/images/invite_icon.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(
-                                              Icons.card_giftcard_rounded,
-                                              color: Color(0xFF8655FE),
-                                              size: 36,
-                                            ),
+                                Text(
+                                  _referralCode!,
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Learn how the Refer & Earn Program works',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF8655FE),
+                                const Spacer(),
+                                InkWell(
+                                  onTap: () => _copyToClipboard(
+                                    _referralCode!,
+                                    'Referral Code',
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 26,
+                                      vertical: 9,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF9E8EFE),
+                                          Color(0xFF6B4EFF),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'Copy',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: Color(0xFF8655FE),
-                                  size: 24,
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 28),
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            'Your Referral Link',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF616161),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 52,
+                            padding: const EdgeInsets.only(left: 16, right: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFE2D6FF),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _referralLink ??
+                                        'A shareable link was not provided.',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: _referralLink == null
+                                      ? null
+                                      : () => _copyToClipboard(
+                                          _referralLink!,
+                                          'Referral Link',
+                                        ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 26,
+                                      vertical: 9,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF9E8EFE),
+                                          Color(0xFF6B4EFF),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'Copy',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          _buildOptionTile(
+                            icon: Icons.person_rounded,
+                            title: 'My Referrals (${_referrals.length})',
+                            onTap: () {},
+                          ),
+                          const SizedBox(height: 10),
+
+                          _buildOptionTile(
+                            icon: Icons.autorenew_rounded,
+                            title: 'Pending ($_pendingCount)',
+                            onTap: () {},
+                          ),
+                          const SizedBox(height: 10),
+
+                          _buildOptionTile(
+                            icon: Icons.check_circle_rounded,
+                            title: 'Successful ($_successfulCount)',
+                            onTap: () {},
+                          ),
+                          const SizedBox(height: 24),
+
+                          const Text(
+                            'How It Works',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () => Get.to(() => const HowWorkScreen()),
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F3FF),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 68,
+                                    height: 68,
+                                    child: Image.asset(
+                                      'assets/images/invite_icon.png',
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.card_giftcard_rounded,
+                                                color: Color(0xFF8655FE),
+                                                size: 36,
+                                              ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'Learn how the Refer & Earn Program works',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF8655FE),
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: Color(0xFF8655FE),
+                                    size: 24,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                        ],
                       ],
                     ),
                   ),
@@ -379,7 +471,9 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                   child: CustomButton(
-                    text: 'View My Referrals ',
+                    text: _referralCode == null
+                        ? 'Retry Referral Setup'
+                        : 'View My Referrals',
                     isGradient: true,
                     gradientColors: const [
                       Color(0xFF9E8EFE),
@@ -388,12 +482,33 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                     height: 49,
                     borderRadius: 28,
                     fontSize: 19,
-                    onTap: () {},
+                    onTap: _isLoading ? () {} : _loadReferrals,
                   ),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF2F2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFCCCC)),
+      ),
+      child: Text(
+        _error ?? 'Could not load referral details.',
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 13,
+          color: Color(0xFFB42318),
         ),
       ),
     );

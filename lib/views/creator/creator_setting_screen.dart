@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../services/auth_api.dart';
+import '../brand/my_campaign/login_screen.dart';
 import '../brand/profile/about_screen.dart';
 import '../brand/profile/account_screen.dart';
 import '../brand/profile/contact_screen.dart';
 import '../brand/profile/feedback_screen.dart';
 import '../brand/profile/help_screen.dart';
+import '../shared/articles_screen.dart';
 import 'edit_profile_screen.dart';
 import 'explore_screen.dart';
 import 'refer_earn_screen.dart';
@@ -50,6 +53,7 @@ class _CreatorSettingScreenState extends State<CreatorSettingScreen> {
       'hasChevron': false,
     },
     {'title': 'Campaign', 'icon': Icons.campaign_rounded, 'hasChevron': false},
+    {'title': 'Articles', 'icon': Icons.article_outlined, 'hasChevron': true},
     {'title': 'Account', 'icon': Icons.person_rounded, 'hasChevron': true},
     {'title': 'About', 'icon': Icons.info_rounded, 'hasChevron': true},
     {
@@ -165,9 +169,14 @@ class _CreatorSettingScreenState extends State<CreatorSettingScreen> {
 
                                 return InkWell(
                                   borderRadius: itemRadius,
-                                  onTap: () {
+                                  onTap: () async {
                                     if (item['title'] == 'Edit Profile') {
-                                      Get.to(() => const EditProfileScreen());
+                                      final didUpdate = await Get.to<bool>(
+                                        () => const EditProfileScreen(),
+                                      );
+                                      if (didUpdate == true && mounted) {
+                                        Get.back(result: true);
+                                      }
                                     } else if (item['title'] == 'Wallet') {
                                       Get.to(() => const WalletScreen());
                                     } else if (item['title'] ==
@@ -175,6 +184,8 @@ class _CreatorSettingScreenState extends State<CreatorSettingScreen> {
                                       Get.to(() => const ReferEarnScreen());
                                     } else if (item['title'] == 'Campaign') {
                                       Get.to(() => const ExploreScreen());
+                                    } else if (item['title'] == 'Articles') {
+                                      Get.to(() => const ArticlesScreen());
                                     } else if (item['title'] == 'Account') {
                                       Get.to(() => const AccountScreen());
                                     } else if (item['title'] == 'About') {
@@ -317,8 +328,25 @@ class _CreatorSettingScreenState extends State<CreatorSettingScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: InkWell(
-                        onTap: () {
-                          Navigator.of(dialogContext).pop();
+                        onTap: () async {
+                          try {
+                            await AuthApi.logout();
+                            if (!dialogContext.mounted) return;
+                            Navigator.of(dialogContext).pop();
+                            Get.offAll(
+                              () => const LoginScreen(isCreator: true),
+                            );
+                          } catch (_) {
+                            if (dialogContext.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Could not log out. Please try again.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
                         },
                         borderRadius: BorderRadius.circular(30),
                         child: Container(

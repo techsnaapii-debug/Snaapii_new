@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'automation_dashboard_screen.dart';
+import 'creator_home_screen.dart';
 
 class AutoreplyPreviewScreen extends StatefulWidget {
   final String? postImage;
@@ -24,7 +24,7 @@ class AutoreplyPreviewScreen extends StatefulWidget {
 }
 
 class _AutoreplyPreviewScreenState extends State<AutoreplyPreviewScreen> {
-  bool _isLiked = false;
+  final bool _isLiked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -110,10 +110,22 @@ class _AutoreplyPreviewScreenState extends State<AutoreplyPreviewScreen> {
                                 left: 0,
                                 right: 0,
                                 height: 260,
-                                child: Image.asset(
-                                  displayImage,
-                                  fit: BoxFit.cover,
-                                ),
+                                child: displayImage.startsWith('http')
+                                    ? Image.network(
+                                        displayImage,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => const ColoredBox(
+                                          color: Color(0xFF2A2440),
+                                          child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        displayImage,
+                                        fit: BoxFit.cover,
+                                      ),
                               ),
 
                               Positioned(
@@ -297,18 +309,12 @@ class _AutoreplyPreviewScreenState extends State<AutoreplyPreviewScreen> {
                     padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
                     child: GestureDetector(
                       onTap: () {
-                        if (!_isLiked) {
-                          setState(() {
-                            _isLiked = true;
-                          });
-                        } else {
-                          Get.to(
-                            () => const AutomationDashboardScreen(
-                              automationType: 'autoreply',
-                              isDm: false,
-                            ),
-                          );
-                        }
+                        Get.offAll(() => const CreatorHomeScreen());
+                        Get.snackbar(
+                          'Automation created',
+                          'Your auto reply automation is ready to go live.',
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
                       },
                       behavior: HitTestBehavior.opaque,
                       child: Container(

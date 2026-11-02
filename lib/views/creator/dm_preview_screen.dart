@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'automation_dashboard_screen.dart';
+import 'creator_home_screen.dart';
 
 class DmPreviewScreen extends StatefulWidget {
   final File? selectedImage;
@@ -547,11 +547,11 @@ class _DmPreviewScreenState extends State<DmPreviewScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: GestureDetector(
                       onTap: () {
-                        Get.to(
-                          () => const AutomationDashboardScreen(
-                            automationType: 'dm',
-                            isDm: true,
-                          ),
+                        Get.offAll(() => const CreatorHomeScreen());
+                        Get.snackbar(
+                          'Automation created',
+                          'Your DM automation is ready to go live.',
+                          snackPosition: SnackPosition.BOTTOM,
                         );
                       },
                       behavior: HitTestBehavior.opaque,
