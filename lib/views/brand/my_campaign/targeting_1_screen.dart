@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../widgets/custom_button.dart';
-import 'targeting_2_screen.dart';
+import 'campaign_media_screen.dart';
 
 class Targeting1Screen extends StatefulWidget {
   const Targeting1Screen({super.key});
@@ -13,8 +13,8 @@ class Targeting1Screen extends StatefulWidget {
 
 class _Targeting1ScreenState extends State<Targeting1Screen> {
   final TextEditingController _descriptionController = TextEditingController();
-  final List<String> _selectedGenders = ['Female'];
-  String _selectedAge = '18 - 25';
+  final List<String> _selectedGenders = [];
+  String? _selectedAge;
 
   @override
   void dispose() {

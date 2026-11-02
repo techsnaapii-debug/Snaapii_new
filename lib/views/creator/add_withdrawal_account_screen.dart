@@ -14,7 +14,7 @@ class AddWithdrawalAccountScreen extends StatefulWidget {
 
 class _AddWithdrawalAccountScreenState
     extends State<AddWithdrawalAccountScreen> {
-  String _selectedMethod = 'bank';
+  String? _selectedMethod;
 
   @override
   Widget build(BuildContext context) {

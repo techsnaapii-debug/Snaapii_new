@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'story_preview_screen.dart';
+import 'package:snaapii/widgets/dashed_border_painter.dart';
 
 class StoryAutomationScreen extends StatefulWidget {
   const StoryAutomationScreen({super.key});
@@ -22,8 +22,30 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
 
   bool _anyComment = false;
   final TextEditingController _keywordsController = TextEditingController(
-    text: 'link',
+    text: '',
   );
+  final List<String> _specificKeywords = [];
+
+  void _addKeyword() {
+    final text = _keywordsController.text.trim();
+    if (text.isNotEmpty) {
+      if (!_specificKeywords.contains(text)) {
+        setState(() {
+          _specificKeywords.add(text);
+          _anyComment = false;
+          _keywordsController.clear();
+        });
+      } else {
+        _keywordsController.clear();
+      }
+    }
+  }
+
+  void _removeKeyword(int index) {
+    setState(() {
+      _specificKeywords.removeAt(index);
+    });
+  }
 
   File? _selectedStep3Image;
   final ImagePicker _imagePicker = ImagePicker();
@@ -1524,6 +1546,7 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
         systemNavigationBarColor: Colors.transparent,
       ),
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: Colors.white,
         body: SafeArea(
           child: Center(
@@ -1538,25 +1561,56 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          stepTitle,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-
-                        Text(
-                          'Step $_currentStep Of 3',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF9D6BFF),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  stepTitle,
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Step $_currentStep Of 3',
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF9D6BFF),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 2),
+                                  child: Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 16,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
 
@@ -1576,18 +1630,23 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 12.0,
+                      padding: EdgeInsets.only(
+                        left: 20.0,
+                        right: 20.0,
+                        top: 12.0,
+                        bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                            ? MediaQuery.of(context).viewInsets.bottom + 120
+                            : 12.0,
                       ),
                       child: _buildCurrentStepBody(),
                     ),
                   ),
 
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    child: _buildBottomButtons(),
-                  ),
+                  if (MediaQuery.of(context).viewInsets.bottom == 0)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: _buildBottomButtons(),
+                    ),
                 ],
               ),
             ),
@@ -2257,14 +2316,24 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
               ),
               const SizedBox(height: 14),
 
-              const Text(
-                'Set Keywords',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
+              Row(
+                children: [
+                  const Text(
+                    'Specific Keywords',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Color(0xFF9E9E9E),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
 
@@ -2273,18 +2342,21 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFDDD6FE),
+                    color: const Color(0xFFBA8FFF),
                     width: 1.5,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _keywordsController,
+                        onSubmitted: (_) => _addKeyword(),
+                        onChanged: (val) {
+                          setState(() {});
+                        },
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 13.5,
@@ -2299,21 +2371,82 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
                           ),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
                         ),
-                        onChanged: (val) {
-                          setState(() {});
-                        },
                       ),
                     ),
-                    const Icon(
-                      Icons.add_circle_outline,
-                      color: Color(0xFFBA8FFF),
-                      size: 28,
+                    GestureDetector(
+                      onTap: _addKeyword,
+                      behavior: HitTestBehavior.opaque,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 14.0),
+                        child: Icon(
+                          Icons.add_circle_outline,
+                          color: Color(0xFF6B4EFF),
+                          size: 28,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 6),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: Text(
+                  '${_keywordsController.text.length}/60',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: Color(0xFF9E9E9E),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              if (_specificKeywords.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(_specificKeywords.length, (index) {
+                    final keyword = _specificKeywords[index];
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            keyword,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => _removeKeyword(index),
+                            behavior: HitTestBehavior.opaque,
+                            child: const Icon(
+                              Icons.close,
+                              size: 14,
+                              color: Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
             ],
           ),
         ),
@@ -2868,55 +3001,4 @@ class _StoryAutomationScreenState extends State<StoryAutomationScreen> {
       ],
     );
   }
-}
-
-class DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashWidth;
-  final double dashGap;
-  final double radius;
-
-  DashedBorderPainter({
-    this.color = const Color(0xFFD1D5DB),
-    this.strokeWidth = 1.2,
-    this.dashWidth = 5.0,
-    this.dashGap = 4.0,
-    this.radius = 12.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final Path path = Path();
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(radius),
-      ),
-    );
-
-    final Path dashedPath = Path();
-    for (final ui.PathMetric metric in path.computeMetrics()) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final double len = (distance + dashWidth < metric.length)
-            ? dashWidth
-            : metric.length - distance;
-        dashedPath.addPath(
-          metric.extractPath(distance, distance + len),
-          Offset.zero,
-        );
-        distance += dashWidth + dashGap;
-      }
-    }
-    canvas.drawPath(dashedPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

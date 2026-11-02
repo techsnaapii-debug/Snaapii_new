@@ -128,7 +128,7 @@ class _AiScreenState extends State<AiScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.white,
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         drawer: _buildDrawer(),
         body: Center(
           child: ConstrainedBox(
@@ -316,7 +316,11 @@ class _AiScreenState extends State<AiScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 100),
+                        SizedBox(
+                          height: MediaQuery.of(context).viewInsets.bottom > 0
+                              ? MediaQuery.of(context).viewInsets.bottom + 12
+                              : 100,
+                        ),
                       ],
                     ),
 
@@ -984,7 +988,11 @@ class _AiScreenState extends State<AiScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 100),
+        SizedBox(
+          height: MediaQuery.of(context).viewInsets.bottom > 0
+              ? MediaQuery.of(context).viewInsets.bottom + 12
+              : 100,
+        ),
       ],
     );
   }

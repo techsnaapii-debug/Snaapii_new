@@ -1,10 +1,11 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../widgets/custom_button.dart';
+import 'package:snaapii/widgets/dashed_border_painter.dart';
+import 'my_campaign_2_screen.dart';
 import 'preview_screen.dart';
 
 class Targeting2Screen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _Targeting2ScreenState extends State<Targeting2Screen> {
                               ),
                               const SizedBox(width: 8),
                               const Text(
-                                'Targeting',
+                                'Campaign Media',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 24,
@@ -173,7 +174,13 @@ class _Targeting2ScreenState extends State<Targeting2Screen> {
                           width: double.infinity,
                           backgroundColor: const Color(0xFFF9F8FF),
                           textColor: const Color(0xFF000000),
-                          onTap: () {},
+                          onTap: () {
+                            MyCampaign2Screen.isDraftSaved = true;
+                            Get.to(
+                              () =>
+                                  const MyCampaign2Screen(initialTab: 'Draft'),
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         CustomButton(
@@ -418,55 +425,4 @@ class _Targeting2ScreenState extends State<Targeting2Screen> {
       ),
     );
   }
-}
-
-class DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashWidth;
-  final double dashGap;
-  final double radius;
-
-  DashedBorderPainter({
-    this.color = const Color(0xFFC5C5C5),
-    this.strokeWidth = 1.0,
-    this.dashWidth = 6.0,
-    this.dashGap = 4.0,
-    this.radius = 8.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final Path path = Path();
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(radius),
-      ),
-    );
-
-    final Path dashedPath = Path();
-    for (final PathMetric metric in path.computeMetrics()) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final double len = (distance + dashWidth < metric.length)
-            ? dashWidth
-            : metric.length - distance;
-        dashedPath.addPath(
-          metric.extractPath(distance, distance + len),
-          Offset.zero,
-        );
-        distance += dashWidth + dashGap;
-      }
-    }
-    canvas.drawPath(dashedPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

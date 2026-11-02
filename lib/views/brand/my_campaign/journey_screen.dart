@@ -124,7 +124,7 @@ class JourneyScreen extends StatelessWidget {
                                 CustomButton(
                                   text: "I'm a Brand",
                                   width: 263.0,
-                                  isGradient: true,
+                                  backgroundColor: Colors.white,
                                   fontSize: 16,
                                   onTap: () {
                                     Get.to(
@@ -140,7 +140,7 @@ class JourneyScreen extends StatelessWidget {
                                 CustomButton(
                                   text: "I'm a Agency",
                                   width: 263.0,
-                                  backgroundColor: const Color(0xFFF9F8FF),
+                                  backgroundColor: Colors.white,
                                   fontSize: 16,
                                   onTap: () {
                                     Get.to(

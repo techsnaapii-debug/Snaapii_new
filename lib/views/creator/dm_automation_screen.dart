@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dm_preview_screen.dart';
+import 'package:snaapii/widgets/dashed_border_painter.dart';
 
 class DmAutomationScreen extends StatefulWidget {
   const DmAutomationScreen({super.key});
@@ -14,6 +14,7 @@ class DmAutomationScreen extends StatefulWidget {
 }
 
 class _DmAutomationScreenState extends State<DmAutomationScreen> {
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _keywordsController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
@@ -324,6 +325,7 @@ class _DmAutomationScreenState extends State<DmAutomationScreen> {
         systemNavigationBarColor: Colors.transparent,
       ),
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: Colors.white,
         body: SafeArea(
           child: Center(
@@ -361,22 +363,25 @@ class _DmAutomationScreenState extends State<DmAutomationScreen> {
                             ),
                           ],
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            Get.snackbar(
-                              'Tutorial',
-                              'How to set up DM automation',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: const Color(0xFF8B5CF6),
-                              colorText: Colors.white,
-                              duration: const Duration(seconds: 2),
-                            );
-                          },
-                          behavior: HitTestBehavior.opaque,
-                          child: const Icon(
-                            Icons.play_circle_outline,
-                            color: Colors.black,
-                            size: 24,
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.black,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 2),
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 16,
+                                color: Colors.black,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -387,7 +392,14 @@ class _DmAutomationScreenState extends State<DmAutomationScreen> {
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: EdgeInsets.only(
+                        left: 16.0,
+                        right: 16.0,
+                        top: 0,
+                        bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                            ? MediaQuery.of(context).viewInsets.bottom + 120
+                            : 12.0,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1035,56 +1047,57 @@ class _DmAutomationScreenState extends State<DmAutomationScreen> {
                     ),
                   ),
 
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                    child: GestureDetector(
-                      onTap: () {
-                        Get.to(
-                          () => DmPreviewScreen(
-                            selectedImage: _selectedImage,
-                            automationName: _nameController.text,
-                            keyword: _keywordsController.text,
-                            message: _messageController.text,
-                            visitProfileText: _visitProfileText,
-                            followingText: _followingText,
-                          ),
-                        );
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        width: double.infinity,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF6B4EFF,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                  if (MediaQuery.of(context).viewInsets.bottom == 0)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                      child: GestureDetector(
+                        onTap: () {
+                          Get.to(
+                            () => DmPreviewScreen(
+                              selectedImage: _selectedImage,
+                              automationName: _nameController.text,
+                              keyword: _keywordsController.text,
+                              message: _messageController.text,
+                              visitProfileText: _visitProfileText,
+                              followingText: _followingText,
                             ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Preview And Go Live',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                          );
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(25),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF6B4EFF,
+                                ).withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Preview And Go Live',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -2260,55 +2273,4 @@ class _DmAutomationScreenState extends State<DmAutomationScreen> {
       },
     );
   }
-}
-
-class DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashWidth;
-  final double dashGap;
-  final double radius;
-
-  DashedBorderPainter({
-    this.color = const Color(0xFFD1D5DB),
-    this.strokeWidth = 1.2,
-    this.dashWidth = 5.0,
-    this.dashGap = 4.0,
-    this.radius = 12.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final Path path = Path();
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(radius),
-      ),
-    );
-
-    final Path dashedPath = Path();
-    for (final ui.PathMetric metric in path.computeMetrics()) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final double len = (distance + dashWidth < metric.length)
-            ? dashWidth
-            : metric.length - distance;
-        dashedPath.addPath(
-          metric.extractPath(distance, distance + len),
-          Offset.zero,
-        );
-        distance += dashWidth + dashGap;
-      }
-    }
-    canvas.drawPath(dashedPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

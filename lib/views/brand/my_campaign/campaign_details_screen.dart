@@ -178,7 +178,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Participation Goal',
                                     style: TextStyle(
                                       fontFamily: 'Poppins',

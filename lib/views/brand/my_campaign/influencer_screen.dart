@@ -16,9 +16,9 @@ class _InfluencerScreenState extends State<InfluencerScreen> {
   final TextEditingController _budgetController = TextEditingController();
 
   int _numberOfInfluencers = 1;
-  int _reelsCount = 1;
-  int _storyCount = 1;
-  int _postCount = 1;
+  int _reelsCount = 0;
+  int _storyCount = 0;
+  int _postCount = 0;
 
   @override
   void dispose() {

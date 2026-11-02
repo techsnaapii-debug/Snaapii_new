@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:snaapii/widgets/creator_widget/vertical_dotted_line.dart';
 
 class HowWorkScreen extends StatelessWidget {
   const HowWorkScreen({super.key});
@@ -120,7 +121,7 @@ class HowWorkScreen extends StatelessWidget {
                                       ),
                                       if (!isLast) ...[
                                         const SizedBox(height: 4),
-                                        _buildDottedLine(),
+                                        const VerticalDottedLine(),
                                         const SizedBox(height: 4),
                                       ],
                                     ],
@@ -154,23 +155,6 @@ class HowWorkScreen extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDottedLine() {
-    return Column(
-      children: List.generate(
-        4,
-        (index) => Container(
-          width: 2,
-          height: 3,
-          margin: const EdgeInsets.symmetric(vertical: 1.5),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD8C4FF),
-            borderRadius: BorderRadius.circular(1),
           ),
         ),
       ),

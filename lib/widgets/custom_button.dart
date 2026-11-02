@@ -45,7 +45,7 @@ class CustomButton extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: gradientColors.last.withOpacity(0.3),
+            color: gradientColors.last.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -58,7 +58,7 @@ class CustomButton extends StatelessWidget {
         border: Border.all(color: borderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: borderColor.withOpacity(0.15),
+            color: borderColor.withValues(alpha: 0.15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -74,6 +74,10 @@ class CustomButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(borderRadius),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
           onTap: onTap,
           child: Center(
             child: (imagePath != null || icon != null)

@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../widgets/custom_button.dart';
 import 'wallet_kyc_screen.dart';
+import 'package:snaapii/widgets/creator_widget/creator_input_field.dart';
+import 'package:snaapii/widgets/creator_widget/kyc_success_view.dart';
+import 'package:snaapii/widgets/creator_widget/kyc_why_card.dart';
 
 class KycVerificationScreen extends StatefulWidget {
   const KycVerificationScreen({super.key});
@@ -41,7 +44,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             constraints: const BoxConstraints(maxWidth: 480),
             child: SizedBox.expand(
               child: _isVerified
-                  ? _buildSuccessView()
+                  ? const KycSuccessView()
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -133,21 +136,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
                                 const SizedBox(height: 24),
 
-                                _buildInputField(
-                                  'Pan Number',
-                                  hintText: 'Enter Pan number',
+                                CreatorInputField(
+                                  label: 'Pan Number',
                                   controller: _panController,
                                 ),
 
-                                _buildInputField(
-                                  'Name as per PAN Card',
-                                  hintText: 'Enter Name as per PAN Card',
+                                CreatorInputField(
+                                  label: 'Name as per PAN Card',
                                   controller: _nameController,
                                 ),
 
-                                _buildInputField(
-                                  'Adhaar Card Number',
-                                  hintText: 'Enter Adhaar card number',
+                                CreatorInputField(
+                                  label: 'Adhaar Card Number',
                                   controller: _adhaarController,
                                 ),
 
@@ -183,52 +183,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
                                 const SizedBox(height: 24),
 
-                                Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF7F3FF),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Icon(
-                                        Icons.info_outline,
-                                        color: Colors.black87,
-                                        size: 22,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: const [
-                                            Text(
-                                              'Why do we need your KYC?',
-                                              style: TextStyle(
-                                                fontFamily: 'Poppins',
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'KYC helps us verify your identity, ensures secure transactions and is required as per government regulations to process withdrawals.',
-                                              style: TextStyle(
-                                                fontFamily: 'Poppins',
-                                                fontSize: 11.5,
-                                                color: Colors.black54,
-                                                height: 1.35,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                const KycWhyCard(),
 
                                 const SizedBox(height: 24),
 
@@ -258,137 +213,5 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     );
   }
 
-  Widget _buildInputField(
-    String label, {
-    required String hintText,
-    TextEditingController? controller,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            color: Colors.black,
-          ),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              color: Color(0xFFC0C0C0),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFE5E5E5),
-                width: 1.2,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF6B4EFF),
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
 
-  Widget _buildSuccessView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        const SizedBox(height: 140),
-
-        Container(
-          width: 240,
-          height: 240,
-          decoration: const BoxDecoration(
-            color: Color(0xFFEFF9F2),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: const BoxDecoration(
-                color: Color(0xFFC7F0D3),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Container(
-                  width: 130,
-                  height: 130,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF28C752),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    size: 76,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 40),
-
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: const [
-            Text('🎉 ', style: TextStyle(fontSize: 22)),
-            Text(
-              'KYC Verified Successfully',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF28C752),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 10),
-
-        const Text(
-          'You can now withdraw your earning.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: Color(0xFF666666),
-          ),
-        ),
-      ],
-    );
-  }
 }

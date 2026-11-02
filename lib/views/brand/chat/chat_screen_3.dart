@@ -57,6 +57,7 @@ class _ChatScreen3State extends State<ChatScreen3> {
                           vertical: 8.0,
                         ),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             const Text(
@@ -66,6 +67,27 @@ class _ChatScreen3State extends State<ChatScreen3> {
                                 fontSize: 24,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF6B4EFF),
+                              ),
+                            ),
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 2),
+                                  child: Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 16,
+                                    color: Colors.black,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
